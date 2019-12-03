@@ -51,7 +51,7 @@ server.use(helmet());
 server.use(cors(corsOptions));
 
 // mount api v1 routes
-server.use('/v1', routes);
+server.use('/', routes);
 
 // if error is not an instanceOf APIError, convert it.
 server.use(error.converter);

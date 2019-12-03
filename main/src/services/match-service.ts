@@ -26,7 +26,7 @@ interface IResponseData {
 
 export default class Main {
   static fetchMatches = async (): Promise<IResponseData> => {
-    const response = await axios.get(`${config.scrapperUrl}/v1/match`);
+    const response = await axios.get(`${config.scrapperUrl}/match`);
     const data: IResponseData = response.data;
 
     return data;
