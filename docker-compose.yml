@@ -1,0 +1,29 @@
+version: "3"
+services:
+  spider:
+    container_name: spider
+    build:
+      context: ./spider
+    ports:
+      - "3001:3001"
+    depends_on:
+      - database
+    links:
+      - database
+  main:
+    container_name: main
+    build:
+      context: ./main
+    ports:
+      - "3002:3002"
+    depends_on:
+      - database
+      - spider
+    links:
+      - database
+      - spider
+  database:
+    container_name: database
+    build: ./db
+    ports:
+      - 3307:3306
