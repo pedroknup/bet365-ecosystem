@@ -25,6 +25,8 @@ interface IResponseData {
 }
 
 export default class Main {
+  private static spiderAlive = false;
+
   static fetchMatches = async (): Promise<IResponseData> => {
     const response = await axios.get(`${config.scrapperUrl}/match`);
     const data: IResponseData = response.data;
@@ -32,48 +34,71 @@ export default class Main {
     return data;
   };
 
+  static checkSpider = async (): Promise<boolean> => {
+    try {
+      const response = await axios.get(`${config.scrapperUrl}/match`);
+      Main.spiderAlive = true;
+    } catch {
+      Main.spiderAlive = false;
+    }
+    return Main.spiderAlive;
+  };
+
   static loop = async () => {
     let minutes = 0;
     while (true) {
-      try {
+      if (!(await Main.checkSpider())) {
         console.log(
-          chalk.yellowBright(`Fetching matches: ${config.scrapperUrl}/v1/match`)
+          chalk.red(`Error. Spider service is not running. Trying again in 30s`)
         );
-        const data = await Main.fetchMatches();
-        minutes = data.nextMinute * 60000;
-        if (data.matches.length > 0) {
-          const matchesFiltered = data.matches.filter(item => item.odds > 0);
-          if (matchesFiltered.length > 0) {
-            console.log(
-              chalk.greenBright(`Found ${matchesFiltered.length} valid matches`)
-            );
-            matchesFiltered.forEach(item => {
+        await sleep(30000);
+      } else {
+        try {
+          console.log(
+            chalk.yellowBright(
+              `Fetching matches: ${config.scrapperUrl}/v1/match`
+            )
+          );
+          const data = await Main.fetchMatches();
+          minutes = data.nextMinute * 60000;
+          if (data.matches.length > 0) {
+            const matchesFiltered = data.matches.filter(item => item.odds > 0);
+            if (matchesFiltered.length > 0) {
               console.log(
-                `${item.id}: ${item.teamA} ${item.scoreA} x ${item.scoreB} ${
-                  item.teamB
-                } ${chalk.greenBright(item.odds)}`
+                chalk.greenBright(
+                  `Found ${matchesFiltered.length} valid matches`
+                )
               );
-            });
-            Main.saveMatches(matchesFiltered);
+              matchesFiltered.forEach(item => {
+                console.log(
+                  `${item.id}: ${item.teamA} ${item.scoreA} x ${item.scoreB} ${
+                    item.teamB
+                  } ${chalk.greenBright(item.odds)}`
+                );
+              });
+              Main.saveMatches(matchesFiltered);
+            } else {
+              console.log(chalk.red(`No valid match founds.`));
+            }
           } else {
             console.log(chalk.red(`No valid match founds.`));
           }
-        } else {
-          console.log(chalk.red(`No valid match founds.`));
+          console.log(
+            chalk.yellowBright(
+              `Running again in ${data.nextMinute} minute${
+                data.nextMinute > 0 ? "s" : ""
+              }`
+            )
+          );
+        } catch (e) {
+          console.log(
+            chalk.red(`Error. Trying again in 1 minute. ${e.message}`)
+          );
+          minutes = 60000;
         }
-        console.log(
-          chalk.yellowBright(
-            `Running again in ${data.nextMinute} minute${
-              data.nextMinute > 0 ? "s" : ""
-            }`
-          )
-        );
-      } catch (e) {
-        console.log(chalk.red(`Error. Trying again in 1 minute. ${e.message}`));
-        minutes = 60000;
-      }
 
-      await sleep(minutes);
+        await sleep(minutes);
+      }
     }
   };
 

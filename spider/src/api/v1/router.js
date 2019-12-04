@@ -1,3 +1,4 @@
+const betMatches = require("./user/bet-matches");
 /* eslint-disable no-constant-condition */
 /* eslint-disable operator-linebreak */
 /* eslint-disable max-len */
@@ -20,9 +21,12 @@
 /* eslint-disable quotes */
 
 const moment = require("moment");
-
+const BASE_URL = "https://www.bet365.com/";
+const URL_FRAGMENT = "#/IP/";
 const DELAY_BASIC_RAW = 1500;
 const DELAY_SLOW_RAW = 3000;
+
+const DELAY_TYPING = 207;
 
 const DELAY_FACTOR = 0.2;
 
@@ -40,18 +44,30 @@ const CircularJSON = require("circular-json");
 
 const router = express.Router();
 
-const getRandomDelay = slow => {
-  let msVariant = Math.floor(Math.random() * 100);
+const getRandomDelay = (slow, typing) => {
+  if (typing) {
+    let msVariant = Math.floor(Math.random() * 50);
 
-  const positiveOrNot = Math.floor(Math.random() * 1);
+    const positiveOrNot = Math.floor(Math.random() * 1);
 
-  if (positiveOrNot === 0) {
-    msVariant *= -1;
+    if (positiveOrNot === 0) {
+      msVariant *= -1;
+    }
+
+    return DELAY_TYPING + msVariant;
+  } else {
+    let msVariant = Math.floor(Math.random() * 100);
+
+    const positiveOrNot = Math.floor(Math.random() * 1);
+
+    if (positiveOrNot === 0) {
+      msVariant *= -1;
+    }
+
+    if (slow && !typing) return DELAY_SLOW + msVariant;
+
+    return DELAY_BASIC + msVariant;
   }
-
-  if (slow) return DELAY_SLOW + msVariant;
-
-  return DELAY_BASIC + msVariant;
 };
 
 function sleep(ms) {
@@ -302,6 +318,23 @@ const setIds = async (page, previousMatches) =>
     return true;
   }, previousMatches);
 
+const launchBrowser = async auth => {
+  if (auth) {
+    return await puppeteer.launch({
+      headless: false,
+      devtools: true,
+      // args: ["--lang=en-US"],
+      args: ["--proxy-server=zproxy.lum-superproxy.io:22225"]
+    });
+  } else
+    return await puppeteer.launch({
+      headless: false,
+      devtools: true
+      // args: ["--lang=en-US"]
+      // args: ["--proxy-server=zproxy.lum-superproxy.io:22225"]
+    });
+};
+
 const fetchMatches = async () => {
   let allMatches = [];
 
@@ -312,15 +345,7 @@ const fetchMatches = async () => {
   let timeout = 0;
 
   const fetch = async () => {
-    const BASE_URL = "https://www.bet365.com/";
-    const URL_FRAGMENT = "#/IP/";
-
-    const browser = await puppeteer.launch({
-      headless: false,
-      devtools: true,
-      // args: ["--lang=en-US"]
-      // args: ["--proxy-server=zproxy.lum-superproxy.io:22225"]
-    });
+    const browser = await launchBrowser();
     const page = await browser.newPage();
 
     // await page.authenticate({
@@ -440,10 +465,121 @@ const fetchMatches = async () => {
   return { matches: filteredMatches, nextMinute };
 };
 
+const typeInput = async (input, word) => {
+  for (let i = 0; i < word.length; i++) {
+    emailInput.value = `${input.value}${word[i]}`;
+    await sleep(getRandomDelay(true, true));
+  }
+
+  return true;
+};
+
 router.use("/match", async (req, res) => {
   const matches = await fetchMatches();
 
   res.send(matches);
+});
+
+router.use("/bet/match", async (req, res) => {
+  const browser = await launchBrowser(true);
+  const page = await browser.newPage();
+  await page.authenticate({
+    // username: "lum-customer-hl_999dc5f5-zone-static_res",
+    // username: "lum-customer-hl_999dc5f5-zone-static",
+    // username: "lum-customer-hl_999dc5f5-zone-static_res-country-de",
+    username: "lum-customer-hl_999dc5f5-zone-static-country-de",
+    // password: "s6z6grmdpdyx"
+    password: "juohlhy66kgb"
+  });
+  await page.goto(`${BASE_URL}${URL_FRAGMENT}`);
+
+  await page.waitForSelector(".ipo-Fixture_TableRow");
+  await page.waitForSelector(".ipo-MainMarkets");
+
+  await page.exposeFunction(
+    "setFilteredMatches",
+    array => (filteredMatches = array)
+  );
+
+  await page.evaluate(
+    async (DELAY_TYPING, DELAY_SLOW, DELAY_BASIC) => {
+      function sleep(ms) {
+        return new Promise(resolve => {
+          setTimeout(resolve, ms);
+        });
+      }
+
+      const getRandomDelay = (slow, typing) => {
+        if (typing) {
+          let msVariant = Math.floor(Math.random() * 50);
+
+          const positiveOrNot = Math.floor(Math.random() * 1);
+
+          if (positiveOrNot === 0) {
+            msVariant *= -1;
+          }
+
+          return DELAY_TYPING + msVariant;
+        } else {
+          let msVariant = Math.floor(Math.random() * 100);
+
+          const positiveOrNot = Math.floor(Math.random() * 1);
+
+          if (positiveOrNot === 0) {
+            msVariant *= -1;
+          }
+
+          if (slow && !typing) return DELAY_SLOW + msVariant;
+
+          return DELAY_BASIC + msVariant;
+        }
+      };
+
+      const typeInput = async (input, word) => {
+        for (let i = 0; i < word.length; i++) {
+          input.value = `${input.value}${word[i]}`;
+          await sleep(getRandomDelay(true, true));
+        }
+
+        return true;
+      };
+
+      const loginContainer = document.querySelector(".hm-Login");
+      const emailInput = loginContainer.firstChild.querySelector("input");
+      const passwordInputs = loginContainer.lastChild.querySelectorAll("input");
+      const passwordArray = Array.prototype.slice.call(passwordInputs);
+
+      await sleep(getRandomDelay());
+      const email = "phknup";
+      const password = "12012012Pk";
+      emailInput.value = "";
+      emailInput.focus();
+      await typeInput(emailInput, email);
+      await sleep(getRandomDelay());
+
+      passwordArray[0].classList.toggle("Hidden");
+      passwordArray[1].classList.toggle("Hidden");
+      await sleep(getRandomDelay());
+      await typeInput(passwordArray[1], password);
+      await sleep(getRandomDelay(true));
+      const okButton = document
+        .querySelector(".hm-Login")
+        .querySelector("button");
+      okButton.click();
+    },
+    DELAY_TYPING,
+    DELAY_SLOW,
+    DELAY_BASIC
+  );
+
+  await sleep(300000);
+  await browser.close();
+
+  res.send("OK :D");
+});
+
+router.use("/health", async (req, res) => {
+  res.status(200).send();
 });
 
 module.exports = router;
