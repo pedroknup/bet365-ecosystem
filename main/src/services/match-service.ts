@@ -14,6 +14,7 @@ export interface IMatch {
   scoreA: number;
   scoreB: number;
   time: string;
+  url?: string;
   moreThan: number;
   lessThan: number;
   odds: number;
@@ -49,9 +50,9 @@ export default class Main {
     while (true) {
       if (!(await Main.checkSpider())) {
         console.log(
-          chalk.red(`Error. Spider service is not running. Trying again in 30s`)
+          chalk.red(`Error. Spider service is not running. Trying again in 10s`)
         );
-        await sleep(30000);
+        await sleep(10000);
       } else {
         try {
           console.log(
@@ -62,6 +63,11 @@ export default class Main {
           const data = await Main.fetchMatches();
           minutes = data.nextMinute * 60000;
           if (data.matches.length > 0) {
+            data.matches.forEach((item)=>{
+              console.log(
+                `${item.scoreA} x ${item.scoreB} ${item.teamB} ${item.url}`
+              );
+            })
             const matchesFiltered = data.matches.filter(item => item.odds > 0);
             if (matchesFiltered.length > 0) {
               console.log(

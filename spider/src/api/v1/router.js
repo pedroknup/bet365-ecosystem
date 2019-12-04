@@ -19,6 +19,8 @@ const betMatches = require("./user/bet-matches");
 /* eslint-disable no-return-assign */
 /* eslint-disable arrow-parens */
 /* eslint-disable quotes */
+const devices = require("puppeteer/DeviceDescriptors");
+const iPhonex = devices["iPhone X"];
 
 const moment = require("moment");
 const BASE_URL = "https://www.bet365.com/";
@@ -28,7 +30,7 @@ const DELAY_SLOW_RAW = 3000;
 
 const DELAY_TYPING = 207;
 
-const DELAY_FACTOR = 0.2;
+const DELAY_FACTOR = 1;
 
 const DELAY_BASIC = DELAY_BASIC_RAW * DELAY_FACTOR;
 const DELAY_SLOW = DELAY_SLOW_RAW * DELAY_FACTOR;
@@ -93,13 +95,14 @@ const goesToMatch = async (id, page) =>
 
       return true;
     } catch {
-      return false;
+      return "";
     }
   }, id);
 
 const goBack = async page =>
   page.evaluate(async () => {
-    const button = document.querySelector(".ip-ControlBar_BBarItem");
+    // const button = document.querySelector(".ip-ControlBar_BBarItem");
+    const button = document.querySelector(".ipe-EventViewTitle_Back");
 
     if (button !== undefined) {
       console.log("Going back...");
@@ -109,9 +112,9 @@ const goBack = async page =>
 
 const getMatches = async page =>
   page.evaluate(async MINIMUM_TIME => {
-    const matchesBlocks = document.querySelectorAll(".ipo-Fixture_TableRow");
+    const matchesBlocks = document.querySelectorAll(".ipo-Fixture");
 
-    // console.log("found", matches);
+    console.log("found", matchesBlocks);
     const matchesObj = [];
     // eslint-disable-next-line no-unused-vars
     const filterMatches = array =>
@@ -126,33 +129,32 @@ const getMatches = async page =>
     let currentId = 0;
 
     [].forEach.call(matchesBlocks, item => {
-      const teamStack = item.querySelectorAll(".ipo-TeamStack_Team");
+      const teamStackArray = item.querySelectorAll(".ipo-Fixture_Truncator");
+      const teamStack = Array.prototype.slice.call(teamStackArray);
+      const time = item.querySelector(".ipo-Fixture_Time").firstChild.innerHTML;
+      const team1 = teamStack[0].innerHTML;
 
-      const time = item.querySelector(".ipo-InPlayTimer").innerHTML;
-
-      const team1 = teamStack[0].firstElementChild.innerHTML;
-
-      const mainMarkersScore = item.querySelector(".ipo-MainMarkets")
-        .lastElementChild;
-      const participantCentered = mainMarkersScore.querySelectorAll(
-        ".gll-ParticipantCentered"
-      );
+      // const mainMarkersScore = item.querySelector(".ipo-MainMarkets")
+      //   .lastElementChild;
+      // const participantCentered = mainMarkersScore.querySelectorAll(
+      //   ".gll-ParticipantCentered"
+      // );
 
       let moreThan = 0;
 
-      let lessThan = 0;
+      // let lessThan = 0;
 
-      if (participantCentered.length > 0) {
-        moreThan = participantCentered[0].querySelector(
-          ".gll-ParticipantCentered_Odds"
-        ).innerHTML;
+      // if (participantCentered.length > 0) {
+      //   moreThan = participantCentered[0].querySelector(
+      //     ".gll-ParticipantCentered_Odds"
+      //   ).innerHTML;
 
-        lessThan = participantCentered[1].querySelector(
-          ".gll-ParticipantCentered_Odds"
-        ).innerHTML;
-      }
+      //   lessThan = participantCentered[1].querySelector(
+      //     ".gll-ParticipantCentered_Odds"
+      //   ).innerHTML;
+      // }
 
-      const team2 = teamStack[1].firstElementChild.innerHTML;
+      const team2 = teamStack[1].innerHTML;
       const boundaries = item.getBoundingClientRect();
 
       currentId += 1;
@@ -167,8 +169,8 @@ const getMatches = async page =>
         scoreA: 0,
         teamB: team2,
         scoreB: 0,
-        moreThan,
-        lessThan,
+        moreThan: 0,
+        lessThan: 0,
         top: boundaries.top
       });
     });
@@ -182,6 +184,13 @@ const getMatches = async page =>
     return filteredMatches;
   }, MINIMUM_TIME);
 
+const getURL = async page =>
+  page.evaluate(async () => {
+    const url = window.location.href;
+    console.log("url", url);
+    return url;
+  });
+
 const getOdds = async page =>
   page.evaluate(async () => {
     let oddsValue = 0;
@@ -194,104 +203,87 @@ const getOdds = async page =>
 
     let returnValue = false;
     const tabChildren = document.querySelectorAll(
-      ".ipe-GridHeaderTabLink + div:not(.Hidden)"
+      ".ipe-EventViewTabLink + div:not(.Hidden)"
     );
 
     console.log("tabs: ", tabChildren);
-    await sleep(1000);
     const array = Array.prototype.slice.call(tabChildren);
 
+    const goalsTabTitle = "Doelpunten";
+    let goalsTab = null;
     for (let i = array.length - 1; i > 0; i -= 1) {
-      console.log(`clicking in ${array[i]}`);
-      array[i].click();
+      console.log(array[i].innerHTML);
+      if (array[i].innerHTML.includes(goalsTabTitle)) {
+        goalsTab = array[i];
+        i = 0;
+      }
+    }
+
+    if (goalsTab) {
+      console.log("Found goals tab. Clicking on it...");
+      goalsTab.click();
 
       await sleep(1000);
-      const items = document.querySelectorAll(
-        ".ipe-EventViewDetail_MarketGrid"
-      );
+      const items = document.querySelectorAll(".ipe-Market");
 
       const children = Array.prototype.slice.call(items);
 
-      for (let j = 0; j < children.length; j += 1) {
-        const group = children[j].querySelectorAll(".gll-MarketGroup");
-        const children2 = Array.prototype.slice.call(group);
+      // const group = children[j].querySelectorAll(".gll-MarketGroup");
+      // const children2 = Array.prototype.slice.call(group);
 
-        console.log("foundGroup: ", group);
-        let goalsTab;
+      console.log("foundGroup: ", items);
 
-        for (let k = 0; k < children2.length; k += 1) {
-          const groupTabTitle =
-            children2[k].firstElementChild.children[0].innerHTML;
+      for (let k = 0; k < children.length; k += 1) {
+        const groupTabTitle =
+          children[k].firstElementChild.children[0].innerHTML;
 
-          console.log("found child", groupTabTitle);
+        console.log("found tab:", groupTabTitle);
+        if (groupTabTitle.includes("Extra")) {
+          await sleep(30000);
+          goalsTab = children[k];
+          const goalsValues = goalsTab
+            .querySelector(".ipe-MarketContainer")
+            .querySelector(".ipe-Column");
+          // .querySelector(".gll-MarketGroup_Wrapper")
+          // .querySelector(".gll-MarketGroupContainer");
+          oddsValue = parseFloat(
+            goalsValues.lastElementChild.querySelector(
+              ".ipe-Participant_OppOdds"
+              // ".gll-ParticipantOddsOnly_Odds"
+            ).innerHTML
+          );
 
-          if (groupTabTitle.includes("Extra")) {
-            goalsTab = children2[k];
-            const goalsValues = goalsTab
-              .querySelector(".gll-MarketGroup_Wrapper")
-              .querySelector(".gll-MarketGroupContainer");
+          console.log("Found extra goals tab");
 
-            oddsValue = parseFloat(
-              goalsValues.lastElementChild.querySelector(
-                ".gll-ParticipantOddsOnly_Odds"
-              ).innerHTML
-            );
+          // alert(`Odds: ${oddsValue}`);
 
-            console.log("Found extra goals tab");
+          k = children2.length;
 
-            // alert(`Odds: ${oddsValue}`);
-
-            k = children2.length;
-
-            return oddsValue;
-          }
+          return oddsValue;
         }
       }
-
-      await sleep(250);
     }
-
     return oddsValue;
   });
 
 const setIds = async (page, previousMatches) =>
   page.evaluate(async previousMatches => {
-    const matchesBlocks = document.querySelectorAll(".ipo-Fixture_TableRow");
+    // const matchesBlocks = document.querySelectorAll(".ipo-Fixture_TableRow");
+    const matchesBlocks = document.querySelectorAll(".ipo-Fixture");
 
     // console.log("found", matches);
     const matchesObj = [];
     // eslint-disable-next-line no-unused-vars
 
     [].forEach.call(matchesBlocks, item => {
-      const teamStack = item.querySelectorAll(".ipo-TeamStack_Team");
-
-      const time = item.querySelector(".ipo-InPlayTimer").innerHTML;
-
-      const team1 = teamStack[0].firstElementChild.innerHTML;
-
-      const mainMarkersScore = item.querySelector(".ipo-MainMarkets")
-        .lastElementChild;
-      const participantCentered = mainMarkersScore.querySelectorAll(
-        ".gll-ParticipantCentered"
-      );
-
+      const teamStackArray = item.querySelectorAll(".ipo-Fixture_Truncator");
+      const teamStack = Array.prototype.slice.call(teamStackArray);
+      const time = item.querySelector(".ipo-Fixture_Time").firstChild.innerHTML;
+      const team1 = teamStack[0].innerHTML;
+      const team2 = teamStack[1].innerHTML;
       let moreThan = 0;
 
       let lessThan = 0;
-
-      if (participantCentered.length > 0) {
-        moreThan = participantCentered[0].querySelector(
-          ".gll-ParticipantCentered_Odds"
-        ).innerHTML;
-
-        lessThan = participantCentered[1].querySelector(
-          ".gll-ParticipantCentered_Odds"
-        ).innerHTML;
-      }
-
-      const team2 = teamStack[1].firstElementChild.innerHTML;
-      const boundaries = item.getBoundingClientRect();
-
       matchesObj.push({
         element: item,
         time,
@@ -347,7 +339,7 @@ const fetchMatches = async () => {
   const fetch = async () => {
     const browser = await launchBrowser();
     const page = await browser.newPage();
-
+    await page.emulate(iPhonex);
     // await page.authenticate({
     //   // username: "lum-customer-hl_999dc5f5-zone-static_res",
     //   username: "lum-customer-hl_999dc5f5-zone-static",
@@ -358,8 +350,8 @@ const fetchMatches = async () => {
 
     await page.goto(`${BASE_URL}${URL_FRAGMENT}`);
 
-    await page.waitForSelector(".ipo-Fixture_TableRow");
-    await page.waitForSelector(".ipo-MainMarkets");
+    // await page.waitForSelector(".ipo-Fixture_TableRow"); //desktop
+    await page.waitForSelector(".ipo-Fixture");
 
     // page.on("console", async msg =>
     //   console[msg._type](
@@ -400,6 +392,8 @@ const fetchMatches = async () => {
         console.log(`Finding goals tab in ${delay / 1000}s`);
         await sleep(delay);
         const odds = await getOdds(page);
+        const URL = await getURL(page);
+        matches[i].url = URL;
 
         delay = getRandomDelay();
 
@@ -453,7 +447,11 @@ const fetchMatches = async () => {
 
     timeout = nextMinute * 60000;
 
-    console.log(chalk.greenBright("All matches has been visited"));
+    console.log(
+      chalk.greenBright(
+        `All matches has been visited. Next match in ${nextMinute} minutes`
+      )
+    );
     // console.log(chalk.yellowBright(`Next minute: ${nextMinute}`));
 
     filteredMatches = matches;
@@ -483,11 +481,15 @@ router.use("/match", async (req, res) => {
 router.use("/bet/match", async (req, res) => {
   const browser = await launchBrowser(true);
   const page = await browser.newPage();
+
+  const ip = req.body.ip;
+
   await page.authenticate({
     // username: "lum-customer-hl_999dc5f5-zone-static_res",
     // username: "lum-customer-hl_999dc5f5-zone-static",
     // username: "lum-customer-hl_999dc5f5-zone-static_res-country-de",
-    username: "lum-customer-hl_999dc5f5-zone-static-country-de",
+    // username: "lum-customer-hl_999dc5f5-zone-static-country-de",
+    username: `lum-customer-hl_999dc5f5-zone-static-ip-${ip}`,
     // password: "s6z6grmdpdyx"
     password: "juohlhy66kgb"
   });
@@ -496,11 +498,26 @@ router.use("/bet/match", async (req, res) => {
   await page.waitForSelector(".ipo-Fixture_TableRow");
   await page.waitForSelector(".ipo-MainMarkets");
 
-  await page.exposeFunction(
-    "setFilteredMatches",
-    array => (filteredMatches = array)
-  );
+  let found = false;
+  await page.exposeFunction("setFound", hasFound => (found = hasFound));
 
+  await page.evaluate(async () => {
+    const okButton = document
+      .querySelector(".hm-Login")
+      .querySelector("button");
+
+    await window.setFound(!!okButton);
+  });
+
+  console.log(found);
+  if (!found) {
+    console.log(chalk.red("IP not valid"));
+    await browser.close();
+    res.send(200);
+    return;
+  }
+
+  await sleep(3000000);
   await page.evaluate(
     async (DELAY_TYPING, DELAY_SLOW, DELAY_BASIC) => {
       function sleep(ms) {
@@ -572,7 +589,6 @@ router.use("/bet/match", async (req, res) => {
     DELAY_BASIC
   );
 
-  await sleep(300000);
   await browser.close();
 
   res.send("OK :D");
