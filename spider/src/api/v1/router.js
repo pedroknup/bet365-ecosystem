@@ -28,7 +28,7 @@ const URL_FRAGMENT = "#/IP/";
 const DELAY_BASIC_RAW = 1500;
 const DELAY_SLOW_RAW = 3000;
 
-const DELAY_TYPING = 207;
+const DELAY_TYPING = 357;
 
 const DELAY_FACTOR = 0.2;
 
@@ -304,7 +304,7 @@ const launchBrowser = async auth => {
       headless: false,
       devtools: true,
       // args: ["--lang=en-US"],
-      args: ["--proxy-server=zproxy.lum-superproxy.io:22225"]
+      args: ["--proxy-server=zproxy.lum-superproxy.io:22225", "--lang=en-US,en"]
     });
   } else
     return await puppeteer.launch({
@@ -409,7 +409,11 @@ const fetchMatches = async () => {
       await goBack(page);
       delay = getRandomDelay(false);
 
-      console.log(chalk.white.dim(`On main page. Getting all ids again in ${delay / 1000}s...`))
+      console.log(
+        chalk.white.dim(
+          `On main page. Getting all ids again in ${delay / 1000}s...`
+        )
+      );
       await sleep(delay);
       await setIds(page, matches);
     }
@@ -434,9 +438,7 @@ const fetchMatches = async () => {
 
     filteredMatches = matches;
     const diffTime = new Date().getTime() - timeStart.getTime();
-    const diffTimeFormated = moment
-      .duration(diffTime)
-      .asSeconds()
+    const diffTimeFormated = moment.duration(diffTime).asSeconds();
     console.log(`Query duration: ${diffTimeFormated} seconds`);
     console.log(
       chalk.greenBright(
@@ -471,43 +473,74 @@ router.use("/match", async (req, res) => {
 router.use("/bet/match", async (req, res) => {
   const browser = await launchBrowser(true);
   const page = await browser.newPage();
+  const pageLanguage = await browser.newPage();
 
+  await pageLanguage.emulate(iPhonex);
+  await page.emulate(iPhonex);
   const ip = req.body.ip;
-
-  await page.authenticate({
+  console.log(ip);
+  const languageURL = "https://mobile.bet365.com/languages.aspx";
+  const options = {
     // username: "lum-customer-hl_999dc5f5-zone-static_res",
     // username: "lum-customer-hl_999dc5f5-zone-static",
     // username: "lum-customer-hl_999dc5f5-zone-static_res-country-de",
     // username: "lum-customer-hl_999dc5f5-zone-static-country-de",
     username: `lum-customer-hl_999dc5f5-zone-static-ip-${ip}`,
+    // username: `lum-customer-hl_999dc5f5-zone-static-country-br`,
     // password: "s6z6grmdpdyx"
     password: "juohlhy66kgb"
+  };
+  await page.authenticate(options);
+  await sleep(1000);
+
+  await pageLanguage.authenticate(options);
+
+  await pageLanguage.goto(languageURL);
+
+  await pageLanguage.waitForSelector(".menuRow");
+
+  const closed = await pageLanguage.evaluate(async () => {
+    function sleep(ms) {
+      return new Promise(resolve => {
+        setTimeout(resolve, ms);
+      });
+    }
+
+    const languages = document.querySelector(".menuRow");
+    await sleep(250);
+    console.log(languages);
+    languages.firstElementChild.click();
+    return true;
   });
+
+  await pageLanguage.waitForSelector(".hm-HeaderModule");
+  await sleep(250);
+  await pageLanguage.close();
+
+  await sleep(1000);
   await page.goto(`${BASE_URL}${URL_FRAGMENT}`);
 
-  await page.waitForSelector(".ipo-Fixture_TableRow");
-  await page.waitForSelector(".ipo-MainMarkets");
+  await page.waitForSelector(".ipo-Fixture");
 
-  let found = false;
-  await page.exposeFunction("setFound", hasFound => (found = hasFound));
+  // await page.exposeFunction("setFound", hasFound => (found = hasFound));
 
-  await page.evaluate(async () => {
-    const okButton = document
-      .querySelector(".hm-Login")
-      .querySelector("button");
+  // // await page.evaluate(async () => {
+  // //   const okButton = document
+  // //     .querySelector(".hm-Login")
+  // //     .querySelector("button");
 
-    await window.setFound(!!okButton);
-  });
+  // //   await window.setFound(!!okButton);
+  // // });
 
-  console.log(found);
-  if (!found) {
-    console.log(chalk.red("IP not valid"));
-    await browser.close();
-    res.send(200);
-    return;
-  }
+  // console.log(found);
+  // if (!found) {
+  //   console.log(chalk.red("IP not valid"));
+  //   await browser.close();
+  //   res.send(200);
+  //   return;
+  // }
 
-  await sleep(3000000);
+  // await sleep(3000000);
   await page.evaluate(
     async (DELAY_TYPING, DELAY_SLOW, DELAY_BASIC) => {
       function sleep(ms) {
@@ -551,12 +584,17 @@ router.use("/bet/match", async (req, res) => {
         return true;
       };
 
-      const loginContainer = document.querySelector(".hm-Login");
-      const emailInput = loginContainer.firstChild.querySelector("input");
-      const passwordInputs = loginContainer.lastChild.querySelectorAll("input");
-      const passwordArray = Array.prototype.slice.call(passwordInputs);
+      const loginButton = document.querySelector(".hm-LoggedOutButtons_Login");
 
       await sleep(getRandomDelay());
+      loginButton.click();
+
+      const emailInput = document.querySelector(".lm-StandardLogin_Username");
+      const passwordInput = document.querySelector(
+        ".lm-StandardLogin_Password"
+      );
+
+      await sleep(getRandomDelay(true));
       const email = "phknup";
       const password = "12012012Pk";
       emailInput.value = "";
@@ -564,21 +602,21 @@ router.use("/bet/match", async (req, res) => {
       await typeInput(emailInput, email);
       await sleep(getRandomDelay());
 
-      passwordArray[0].classList.toggle("Hidden");
-      passwordArray[1].classList.toggle("Hidden");
-      await sleep(getRandomDelay());
-      await typeInput(passwordArray[1], password);
       await sleep(getRandomDelay(true));
-      const okButton = document
-        .querySelector(".hm-Login")
-        .querySelector("button");
+      await typeInput(passwordInput, password);
+      await sleep(getRandomDelay(true));
+      const okButton = document.querySelector(".lm-StandardLogin_LoginButton");
       okButton.click();
+
+      return true;
     },
     DELAY_TYPING,
     DELAY_SLOW,
     DELAY_BASIC
   );
-
+  await sleep(getRandomDelay(true));
+  await page.goto("https://mobile.bet365.com/#/IP/EV15449561382C1/");
+  await sleep(30000);
   await browser.close();
 
   res.send("OK :D");
