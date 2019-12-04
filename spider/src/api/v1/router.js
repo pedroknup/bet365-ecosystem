@@ -30,7 +30,7 @@ const DELAY_SLOW_RAW = 3000;
 
 const DELAY_TYPING = 207;
 
-const DELAY_FACTOR = 1;
+const DELAY_FACTOR = 0.2;
 
 const DELAY_BASIC = DELAY_BASIC_RAW * DELAY_FACTOR;
 const DELAY_SLOW = DELAY_SLOW_RAW * DELAY_FACTOR;
@@ -104,7 +104,7 @@ const goBack = async page =>
     // const button = document.querySelector(".ip-ControlBar_BBarItem");
     const button = document.querySelector(".ipe-EventViewTitle_Back");
 
-    if (button !== undefined) {
+    if (button) {
       console.log("Going back...");
       button.click();
     }
@@ -218,48 +218,36 @@ const getOdds = async page =>
         i = 0;
       }
     }
-
     if (goalsTab) {
-      console.log("Found goals tab. Clicking on it...");
       goalsTab.click();
-
       await sleep(1000);
       const items = document.querySelectorAll(".ipe-Market");
-
       const children = Array.prototype.slice.call(items);
-
-      // const group = children[j].querySelectorAll(".gll-MarketGroup");
-      // const children2 = Array.prototype.slice.call(group);
-
-      console.log("foundGroup: ", items);
-
       for (let k = 0; k < children.length; k += 1) {
         const groupTabTitle =
           children[k].firstElementChild.children[0].innerHTML;
-
-        console.log("found tab:", groupTabTitle);
-        if (groupTabTitle.includes("Extra")) {
-          await sleep(30000);
+        if (groupTabTitle.includes("wedstrijd")) {
           goalsTab = children[k];
-          const goalsValues = goalsTab
-            .querySelector(".ipe-MarketContainer")
-            .querySelector(".ipe-Column");
-          // .querySelector(".gll-MarketGroup_Wrapper")
-          // .querySelector(".gll-MarketGroupContainer");
-          oddsValue = parseFloat(
-            goalsValues.lastElementChild.querySelector(
-              ".ipe-Participant_OppOdds"
-              // ".gll-ParticipantOddsOnly_Odds"
-            ).innerHTML
+          const goalsValues = goalsTab.querySelector(".ipe-MarketContainer");
+          const countPossibilitiesChildren =
+            goalsValues.lastElementChild.children;
+          const countPossibilitiesArray = Array.prototype.slice.call(
+            countPossibilitiesChildren
           );
+          if (countPossibilitiesArray.length >= 3) {
+            oddsValue = parseFloat(
+              goalsValues.lastElementChild.lastElementChild.querySelector(
+                ".ipe-Participant_OppOdds"
+              ).innerHTML
+            );
 
-          console.log("Found extra goals tab");
+            console.log("Found odds", oddsValue, goalsTab);
+            // alert(`Odds: ${oddsValue}`);
 
-          // alert(`Odds: ${oddsValue}`);
+            k = children.length;
 
-          k = children2.length;
-
-          return oddsValue;
+            return oddsValue;
+          }
         }
       }
     }
@@ -336,6 +324,7 @@ const fetchMatches = async () => {
 
   let timeout = 0;
 
+  const timeStart = new Date();
   const fetch = async () => {
     const browser = await launchBrowser();
     const page = await browser.newPage();
@@ -377,11 +366,11 @@ const fetchMatches = async () => {
     for (let i = 0; i < matches.length; i += 1) {
       let delay = getRandomDelay(false);
 
-      console.log(`Going to match #${matches[i].id} in ${delay / 1000}s`);
+      // console.log(`Going to match #${matches[i].id} in ${delay / 1000}s`);
 
       console.log(
         chalk.blue(
-          `(${matches[i].time}) ${matches[i].teamA} ${matches[i].scoreA} x ${matches[i].scoreB} ${matches[i].teamB}`
+          `${matches[i].time} ${matches[i].teamA} ${matches[i].scoreA} x ${matches[i].scoreB} ${matches[i].teamB}`
         )
       );
       await sleep(delay);
@@ -389,7 +378,7 @@ const fetchMatches = async () => {
 
       delay = getRandomDelay(true);
       if (foundMatch) {
-        console.log(`Finding goals tab in ${delay / 1000}s`);
+        console.log(chalk.white.dim(`Looking for goals tab...`));
         await sleep(delay);
         const odds = await getOdds(page);
         const URL = await getURL(page);
@@ -402,31 +391,25 @@ const fetchMatches = async () => {
         if (odds > 0) {
           matches[i].odds = odds;
           console.log(
-            chalk.greenBright(
-              `${
-                matches[i].id
-              } contains extra goals tab! Odds: ${odds}. Going back in ${delay /
-                1000}s`
-            )
+            chalk.green.dim(`Odds: ${odds}. Going back in ${delay / 1000}s...`)
           );
         } else {
           console.log(
-            chalk.red(
-              `${
-                matches[i].id
-              } doesn't contains extra goals tab. Going back in ${delay /
-                1000} `
+            chalk.red.dim(
+              `No valid bet found. Going back in ${delay / 1000}s... `
             )
           );
         }
       } else {
-        console.log(`Match no longer exists. Going back in ${delay / 1000}s`);
+        console.log(
+          chalk.red(`Match no longer exists. Going back in ${delay / 1000}s...`)
+        );
       }
       await sleep(delay);
       await goBack(page);
       delay = getRandomDelay(false);
 
-      console.log(`On main page. Getting all ids again in ${delay / 1000}s`);
+      console.log(chalk.white.dim(`On main page. Getting all ids again in ${delay / 1000}s...`))
       await sleep(delay);
       await setIds(page, matches);
     }
@@ -447,14 +430,21 @@ const fetchMatches = async () => {
 
     timeout = nextMinute * 60000;
 
-    console.log(
-      chalk.greenBright(
-        `All matches has been visited. Next match in ${nextMinute} minutes`
-      )
-    );
     // console.log(chalk.yellowBright(`Next minute: ${nextMinute}`));
 
     filteredMatches = matches;
+    const diffTime = new Date().getTime() - timeStart.getTime();
+    const diffTimeFormated = moment
+      .duration(diffTime)
+      .asSeconds()
+    console.log(`Query duration: ${diffTimeFormated} seconds`);
+    console.log(
+      chalk.greenBright(
+        `${matches.filter(item => item.odds > 0).length}/${
+          matches.length
+        } valid matches. Next match in ${nextMinute} minutes`
+      )
+    );
     await browser.close();
   };
 
