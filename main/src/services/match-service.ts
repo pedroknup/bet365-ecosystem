@@ -9,6 +9,7 @@ import { user } from "../entities/user";
 import { notEqual } from "assert";
 import { IMatch } from "./match-service";
 import { bet } from "../entities/bet";
+import { CLIENT_RENEG_LIMIT } from "tls";
 
 const MAXIMUM_ODDS = 1.05;
 const VALUE_TO_BET = 1;
@@ -200,53 +201,9 @@ export default class Main {
     });
     const threeHoursAgo = new Date();
     const matchesToCheck = [];
-    threeHoursAgo.setHours(threeHoursAgo.getHours() - 3);
-    for (let i = 0; i < users.length; i++) {
-      const possibleUnfinishedMatches = [];
-      users[i].bets.forEach(bet => {
-        if (bet.match.date >= threeHoursAgo) {
-          possibleUnfinishedMatches.push(bet.match);
-          matchesToCheck.push(bet.match);
-        }
-      });
-      users[i].bets = possibleUnfinishedMatches;
-    }
-
-    const unredundantMatches = [];
-    matchesToCheck.forEach(item => {
-      if (!unredundantMatches.find(a => a.id === item.id)) {
-        unredundantMatches.push(item);
-      }
-    });
 
     //check what matches are finished
     console.log("Checking unfinished matches...  ");
-
-    if (unredundantMatches.length > 0) {
-      const response = await axios.post("http://localhost:3002/check", {
-        matches: unredundantMatches
-      });
-      const { unfinishedMatches } = response.data;
-      console.log(
-        `${unfinishedMatches.length}/${unredundantMatches.length} unfinished matches`
-      );
-
-      for (let i = 0; i < users.length; i++) {
-        users[i].bets = unfinishedMatches.filter(item =>
-          users[i].bets.some(a => {
-            if (a && item) {
-              return a.id == item.id;
-            }
-            return false;
-          })
-        );
-      }
-    } else {
-      for (let i = 0; i < users.length; i++) {
-        users[i].bets = [];
-      }
-    }
-
     if (matches.length > 0) {
       console.log(
         chalk.greenBright.bold(
@@ -256,28 +213,12 @@ export default class Main {
       const promises = [];
       const LIMIT = 5;
       users.forEach(userToBet => {
-        if (userToBet.bets.length <= LIMIT) {
-          let uniqueMatches: IMatch[] = [];
-          matches.forEach(a => {
-            if (!userToBet.bets.some(b => b.id == a.id)) uniqueMatches.push(a);
-          });
-          if (userToBet.bets.length < LIMIT) {
-            promises.push(
-              makeBetUser(
-                userToBet,
-                uniqueMatches.slice(0, LIMIT - userToBet.bets.length)
-              )
-            );
-            console.log(
-              // `${item.firstName} doesn't have any active bet(s). Making the bet`
-              `${userToBet.firstName} has less then ${LIMIT} active bet(s) (${userToBet.bets.length}). Making the bet`
-            );
-          }
-        } else {
-          console.log(
-            `${userToBet.firstName} already have ${userToBet.bets.length} active bet(s)`
-          );
-        }
+        promises.push(
+          makeBetUser(
+            userToBet,
+            matches.slice(0, LIMIT)
+          )
+        );
       });
       console.log(chalk.blueBright(`New bets: [success/bets]`));
       await Promise.all(promises);
@@ -311,6 +252,7 @@ const makeBetUser = async (
             password: user.betPassword
           },
           maxOdd: MAXIMUM_ODDS,
+          limitBets: 5,
           valueToBet: VALUE_TO_BET,
           ip: "89.185.76.16",
           matches: filteredMatches

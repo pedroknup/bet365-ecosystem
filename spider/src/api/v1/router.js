@@ -36,7 +36,7 @@ const DELAY_FACTOR = 0.1;
 const DELAY_BASIC = DELAY_BASIC_RAW * DELAY_FACTOR;
 const DELAY_SLOW = DELAY_SLOW_RAW * DELAY_FACTOR;
 
-const MINIMUM_TIME = 80;
+const MINIMUM_TIME = 70;
 
 const chalk = require("chalk");
 const express = require("express");
@@ -561,7 +561,7 @@ router.use("/open/:ip", async (req, res) => {
       successfullyBets.push(a)
     );
 
-    await page.evaluate(
+    const bug = await page.evaluate(
       async (DELAY_TYPING, DELAY_SLOW, DELAY_BASIC) => {
         function sleep(ms) {
           return new Promise(resolve => {
@@ -611,6 +611,18 @@ router.use("/open/:ip", async (req, res) => {
         await sleep(getRandomDelay());
         loginButton.click();
 
+        let found = false;
+        for (let attempts = 0; attempts < 12; attempts++) {
+          if (!document.querySelector(".lm-StandardLogin_Username")) {
+            await sleep(1000);
+          } else {
+            found = true;
+            attempts = 12;
+          }
+        }
+        if (!found) {
+          return "input not found. BUG";
+        }
         const emailInput = document.querySelector(".lm-StandardLogin_Username");
         const passwordInput = document.querySelector(
           ".lm-StandardLogin_Password"
@@ -635,9 +647,39 @@ router.use("/open/:ip", async (req, res) => {
       DELAY_SLOW,
       DELAY_BASIC
     );
+    if (bug) {
+      console.log(chalk.red(bug));
+      res.status(200).send();
+      return;
+    }
+    await page.waitForSelector(".hm-LoggedInButtons_MyBetsLabel");
+
+    const count = await page.evaluate(async () => {
+      function sleep(ms) {
+        return new Promise(resolve => {
+          setTimeout(resolve, ms);
+        });
+      }
+
+      let found = false;
+      for (let attempts = 0; attempts < 10; attempts++) {
+        const label = document.querySelector(".hm-LoggedInButtons_MyBetsCount");
+        if (label) {
+          const count = label.innerHTML
+          alert(count);
+          return count;
+        } else {
+          console.log("attempt " + attempts)
+          await sleep(1000);
+        }
+      }
+      return 0;
+    });
+    console.log(count);
   } catch (e) {
     console.log(e.message);
   }
+
   res.status(200).send();
 });
 
@@ -651,8 +693,8 @@ router.use("/bet/match", async (req, res) => {
     await page.emulate(iPhonex);
     const ip = req.body.ip;
     const { username, password } = req.body.user;
-    const { matches, maxOdd, valueToBet } = req.body;
-    console.log(ip);
+    const { matches, maxOdd, valueToBet, limitBets } = req.body;
+    console.log(req.body);
     const languageURL = "https://mobile.bet365.com/languages.aspx";
     const options = {
       // username: "lum-customer-hl_999dc5f5-zone-static_res",
@@ -787,128 +829,188 @@ router.use("/bet/match", async (req, res) => {
     );
 
     await sleep(6000);
-
     for (let index = 0; index < matches.length; index++) {
+      if (successfullyBets.length >= limitBets) {
+        console.log("Limit of bets");
+        index = matches.length;
+        return;
+      }
       const currentMatch = matches[index];
       try {
         console.log(
-          `Making bet ${currentMatch.teamA} ${currentMatch.teamB}, max odds: ${maxOdd}, value: ${valueToBet}`
+          chalk.blueBright(
+            `${username}`
+          )`Making bet ${currentMatch.teamA} x ${currentMatch.teamB}, max odds: ${maxOdd}, value: ${valueToBet}`
         );
       } catch {}
-      await page.goto(currentMatch.url);
-      await page.waitForSelector(".ipe-EventViewMarketTabs");
-      await sleep(1000);
+      try {
+        await page.goto(currentMatch.url);
+        await page.waitForSelector(".ipe-EventViewMarketTabs");
+        await sleep(1000);
 
-      await page.evaluate(
-        async (match, maxOdd, valueToBet) => {
-          let oddsValue = 0;
+        const resultStr = await page.evaluate(
+          async (match, maxOdd, valueToBet) => {
+            let oddsValue = 0;
 
-          function sleep(ms) {
-            return new Promise(resolve => {
-              setTimeout(resolve, ms);
-            });
-          }
-
-          const enterValue = async value => {
-            const valueStr = value.toString();
-            for (let i = 0; i < valueStr.length; i++) {
-              let index = 0;
-              if (valueStr[i] == "0") index = 10;
-              else index = parseInt(valueStr[i]) - 1;
-
-              document.querySelector(".qb-Keypad").children[index].click();
-              await sleep(900);
+            function sleep(ms) {
+              return new Promise(resolve => {
+                setTimeout(resolve, ms);
+              });
             }
-          };
 
-          let returnValue = false;
-          await sleep(1000);
-          const tabChildren = document.querySelectorAll(
-            ".ipe-EventViewTabLink + div:not(.Hidden)"
-          );
+            const enterValue = async value => {
+              const valueStr = value.toString();
+              for (let i = 0; i < valueStr.length; i++) {
+                let index = 0;
+                if (valueStr[i] == "0") index = 10;
+                else index = parseInt(valueStr[i]) - 1;
 
-          console.log("tabs: ", tabChildren);
-          const array = Array.prototype.slice.call(tabChildren);
+                document.querySelector(".qb-Keypad").children[index].click();
+                await sleep(900);
+              }
+            };
 
-          const goalsTabTitle = "Goals";
-          const goalsTabTitlePT = "Gols";
-          let goalsTab = null;
-          for (let i = array.length - 1; i > 0; i -= 1) {
-            console.log(array[i].innerHTML);
-            if (
-              array[i].innerHTML.includes(goalsTabTitle) ||
-              array[i].innerHTML.includes(goalsTabTitlePT)
-            ) {
-              goalsTab = array[i];
-              console.log("found tab");
-              i = 0;
-            }
-          }
-          if (goalsTab) {
-            goalsTab.click();
+            let returnValue = false;
             await sleep(1000);
-            const items = document.querySelectorAll(".ipe-Market");
-            const children = Array.prototype.slice.call(items);
-            for (let k = 0; k < children.length; k += 1) {
-              const groupTabTitle =
-                children[k].firstElementChild.children[0].innerHTML;
-              if (
-                groupTabTitle.includes("Match Goals") ||
-                (groupTabTitle.includes("Partida") &&
-                  groupTabTitle.includes("Gols"))
-              ) {
-                goalsTab = children[k];
-                const goalsValues = goalsTab.querySelector(
-                  ".ipe-MarketContainer"
-                );
-                const countPossibilitiesChildren =
-                  goalsValues.lastElementChild.children;
-                const countPossibilitiesArray = Array.prototype.slice.call(
-                  countPossibilitiesChildren
-                );
-                if (countPossibilitiesArray.length >= 3) {
-                  const betOdds = goalsValues.lastElementChild.lastElementChild.querySelector(
-                    ".ipe-Participant_OppOdds"
-                  ).innerHTML;
-                  try {
-                    oddsValue = parseFloat(betOdds);
-                  } catch {}
-                  console.log("odds:", oddsValue);
-                  if (oddsValue <= maxOdd) {
-                    goalsValues.lastElementChild.lastElementChild.click();
-                    await sleep(1000);
-                    document.querySelector(".qb-DetailsContainer").click();
+            const tabChildren = document.querySelectorAll(
+              ".ipe-EventViewTabLink + div:not(.Hidden)"
+            );
 
-                    await sleep(1000);
-                    await enterValue(1);
-                    console.log("ready to bet...");
-                    match.odds = betOdds;
-                    match.value = valueToBet;
-                    await window.pushSuccessfullyBet(match);
-                    document.querySelector(".qb-PlaceBetButton").click();
-                    // alert(`Odds: ${oddsValue}`);
-                    //document.querySelector("div.qb-PlaceBetButton") //loaded
-                    //document.querySelector("div.qb-MessageContainer_Indicator").click() //click
-                    await sleep(10000);
-                  }else{
-                    console.log(`Match ${match.url} odds is now ${oddsValue} and the limit is ${maxOdd}`)
-                  }
-                  k = children.length;
-                }
+            const array = Array.prototype.slice.call(tabChildren);
+
+            const goalsTabTitle = "Goals";
+            const goalsTabTitlePT = "Gols";
+            if (array.length === 0) {
+              return "goals tab not found. BUG!";
+            }
+            let goalsTab = null;
+            for (let i = array.length - 1; i > 0; i -= 1) {
+              console.log(array[i].innerHTML);
+              if (
+                array[i].innerHTML.includes(goalsTabTitle) ||
+                array[i].innerHTML.includes(goalsTabTitlePT)
+              ) {
+                goalsTab = array[i];
+                // console.log("found tab");
+                i = 0;
               }
             }
-          } else {
-            console.log("not found");
-          }
-        },
-        currentMatch,
-        maxOdd,
-        valueToBet
-      );
+            if (goalsTab) {
+              goalsTab.click();
+              await sleep(1000);
+              const items = document.querySelectorAll(".ipe-Market");
+              const children = Array.prototype.slice.call(items);
+              for (let k = 0; k < children.length; k += 1) {
+                const groupTabTitle =
+                  children[k].firstElementChild.children[0].innerHTML;
+                if (
+                  groupTabTitle.includes("Match Goals") ||
+                  (groupTabTitle.includes("Partida") &&
+                    groupTabTitle.includes("Gols"))
+                ) {
+                  goalsTab = children[k];
+                  const goalsValues = goalsTab.querySelector(
+                    ".ipe-MarketContainer"
+                  );
+                  const countPossibilitiesChildren =
+                    goalsValues.lastElementChild.children;
+                  const countPossibilitiesArray = Array.prototype.slice.call(
+                    countPossibilitiesChildren
+                  );
+                  if (countPossibilitiesArray.length >= 3) {
+                    const betOdds = goalsValues.lastElementChild.lastElementChild.querySelector(
+                      ".ipe-Participant_OppOdds"
+                    ).innerHTML;
+                    try {
+                      oddsValue = parseFloat(betOdds);
+                    } catch {}
+                    console.log("odds:", oddsValue);
+                    if (oddsValue <= maxOdd) {
+                      if (!goalsValues.lastElementChild.lastElementChild) {
+                        return "Not found odds field. BUG!";
+                      }
+                      goalsValues.lastElementChild.lastElementChild.click();
+                      await sleep(1200);
+                      if (!document.querySelector(".qb-DetailsContainer")) {
+                        return "Bet button not found. BUG!";
+                      }
+                      document.querySelector(".qb-DetailsContainer").click();
+
+                      await sleep(1000);
+                      await enterValue(1);
+                      console.log("ready to bet...");
+                      match.odds = betOdds;
+                      match.value = valueToBet;
+                      if (!document.querySelector(".qb-PlaceBetButton")) {
+                        return "Finish bet button not found. BUG!";
+                      }
+                      // if (!window.confirm("Do you really want to bet?")) {
+                      //   return "";
+                      // }
+                      document.querySelector(".qb-PlaceBetButton").click();
+
+                      for (let attempts = 0; attempts < 7; attempts++) {
+                        const finishLabel = document.querySelector(
+                          ".qb-Header_Done"
+                        );
+                        if (
+                          finishLabel &&
+                          finishLabel.innerHTML.includes("Terminar")
+                        ) {
+                          const closeButton = document.querySelector(
+                            ".qb-MessageContainer_IndicationArea"
+                          );
+                          k = 5;
+                          if (closeButton) {
+                            if (
+                              document.querySelectorAll(
+                                ".ip-LiveAlertsHeaderButtons_MyBets"
+                              )
+                            ) {
+                            }
+                            closeButton.click();
+                            await window.pushSuccessfullyBet(match);
+                            await sleep(1000);
+                            // if (window.confirm("Do you want to freeze?")) {
+                            //   await sleep(2000);
+                            // }
+                            return "";
+                          } else {
+                            return "Close button not found. BUG";
+                          }
+                        } else {
+                          await sleep(2000);
+                        }
+                      }
+                      await sleep(1000);
+                      return "Time out";
+                    } else {
+                      return `Match ${match.url} odds is now ${oddsValue} and the limit is ${maxOdd}`;
+                    }
+                    k = children.length;
+                  }
+                }
+              }
+            } else {
+              console.log("Goal panel not found");
+            }
+          },
+          currentMatch,
+          maxOdd,
+          valueToBet
+        );
+        if (resultStr) {
+          console.log(chalk.redBright(resultStr));
+        }
+      } catch (e) {
+        console.log(chalk.redBright(e.message));
+        throw e;
+      }
     }
     await browser.close();
     res.send({ successfullyBets });
-  } catch {
+  } catch (e) {
+    console.log(chalk.redBright(`An error has occurred. ${e.message}`));
     res.send({ successfullyBets: [] });
   }
 });
