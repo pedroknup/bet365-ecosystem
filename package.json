@@ -1,0 +1,19 @@
+{
+  "name": "bet365-ecosystem",
+  "version": "1.0.0",
+  "description": "Bet365 bot ecosystem",
+  "main": "index.js",
+  "scripts": {
+    "install": "cd main && npm install && cd ../spider && npm install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pedroknup/bet365-ecosystem.git"
+  },
+  "author": "Pedro Knup",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pedroknup/bet365-ecosystem/issues"
+  },
+  "homepage": "https://github.com/pedroknup/bet365-ecosystem#readme"
+}

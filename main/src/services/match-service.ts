@@ -8,7 +8,10 @@ import { match } from "../entities/match";
 import { user } from "../entities/user";
 import { notEqual } from "assert";
 import { IMatch } from "./match-service";
-import { bet } from '../entities/bet';
+import { bet } from "../entities/bet";
+
+const MAXIMUM_ODDS = 1.05;
+const VALUE_TO_BET = 1;
 
 export interface IMatch {
   id: number;
@@ -122,7 +125,7 @@ export default class Main {
     const matchRepository = getRepository(match);
     const finalMatches: IMatch[] = [];
     const promises = [];
-    const MAXIMUM_ODDS = 1.05;
+
     const filteredMatches = matches.filter(item => item.odds <= MAXIMUM_ODDS);
     if (filteredMatches.length > 0)
       console.log(
@@ -202,8 +205,8 @@ export default class Main {
       const possibleUnfinishedMatches = [];
       users[i].bets.forEach(bet => {
         if (bet.match.date >= threeHoursAgo) {
-          possibleUnfinishedMatches.push(bet);
-          matchesToCheck.push(bet);
+          possibleUnfinishedMatches.push(bet.match);
+          matchesToCheck.push(bet.match);
         }
       });
       users[i].bets = possibleUnfinishedMatches;
@@ -217,6 +220,8 @@ export default class Main {
     });
 
     //check what matches are finished
+    console.log("Checking unfinished matches...  ");
+
     if (unredundantMatches.length > 0) {
       const response = await axios.post("http://localhost:3002/check", {
         matches: unredundantMatches
@@ -228,7 +233,12 @@ export default class Main {
 
       for (let i = 0; i < users.length; i++) {
         users[i].bets = unfinishedMatches.filter(item =>
-          users[i].bets.some(a => a.id == item.id)
+          users[i].bets.some(a => {
+            if (a && item) {
+              return a.id == item.id;
+            }
+            return false;
+          })
         );
       }
     } else {
@@ -244,15 +254,28 @@ export default class Main {
         )
       );
       const promises = [];
-      users.forEach(item => {
-        if (item.bets.length === 0) {
-          promises.push(makeBetUser(item, [matches[0]]));
-          console.log(
-            `${item.firstName} doesn't have any active bet(s). Making the bet`
-          );
+      const LIMIT = 5;
+      users.forEach(userToBet => {
+        if (userToBet.bets.length <= LIMIT) {
+          let uniqueMatches: IMatch[] = [];
+          matches.forEach(a => {
+            if (!userToBet.bets.some(b => b.id == a.id)) uniqueMatches.push(a);
+          });
+          if (userToBet.bets.length < LIMIT) {
+            promises.push(
+              makeBetUser(
+                userToBet,
+                uniqueMatches.slice(0, LIMIT - userToBet.bets.length)
+              )
+            );
+            console.log(
+              // `${item.firstName} doesn't have any active bet(s). Making the bet`
+              `${userToBet.firstName} has less then ${LIMIT} active bet(s) (${userToBet.bets.length}). Making the bet`
+            );
+          }
         } else {
           console.log(
-            `${item.firstName} already have ${item.bets.length} active bet(s)`
+            `${userToBet.firstName} already have ${userToBet.bets.length} active bet(s)`
           );
         }
       });
@@ -269,7 +292,10 @@ const makeBetUser = async (
   matches: IMatch[]
 ): Promise<IMatch[]> => {
   const filteredMatches = matches.filter(
-    item => !user.bets.some(bet => bet.match.id === item.id)
+    item =>
+      !user.bets.some(bet => {
+        return bet.id === item.id;
+      })
   );
   console.log(
     chalk.yellow.dim(
@@ -278,35 +304,60 @@ const makeBetUser = async (
   );
   if (user.betUsername && user.betPassword) {
     if (filteredMatches.length > 0) {
-      const response = await axios.post("http://localhost:3002/bet/match", {
-        user: {
-          username: user.betUsername,
-          password: user.betPassword
-        },
-        ip: "89.185.76.16",
-        matches: filteredMatches
-      });
+      try {
+        const response = await axios.post("http://localhost:3002/bet/match", {
+          user: {
+            username: user.betUsername,
+            password: user.betPassword
+          },
+          maxOdd: MAXIMUM_ODDS,
+          valueToBet: VALUE_TO_BET,
+          ip: "89.185.76.16",
+          matches: filteredMatches
+        });
 
-      const successfullyBets = response.data.successfullyBets;
+        const successfullyBets = response.data.successfullyBets;
 
-      const promises = [];
-      const betRepository = getRepository(bet);
-      successfullyBets.forEach((item)=>{
-        const newBet = new bet();
-        newBet.match = item;
-        newBet.user = user;
-        newBet.value = 5;
-       promises.push(betRepository.save(newBet));
-      })
-      
-      console.log(
-        `✓ ${user.firstName} ${user.lastName}: [${successfullyBets.length}/${filteredMatches.length}]`
-      );
+        const promises = [];
+        const betRepository = getRepository(bet);
+        const matchRepository = getRepository(match);
+        for (let i = 0; i < successfullyBets.length; i++) {
+          const item = successfullyBets[i];
+          const selectedMatch = await matchRepository.findOne({
+            where: { url: item.url }
+          });
+          const newBet = new bet();
+          newBet.match = selectedMatch;
+          newBet.odds = item.odds;
+          newBet.user = user;
+          newBet.value = item.value;
+          console.log(
+            chalk.white.dim(
+              `→ ${user.firstName} ${user.lastName}: ${item.teamA} x ${item.teamB}`
+            ),
+            chalk.white(`R$ ${item.value},00 : ${item.odds}`)
+          );
+          promises.push(betRepository.save(newBet));
+        }
 
-      const length = promises.length;
-      await Promise.all(promises);
+        console.log(
+          `✓ ${user.firstName} ${user.lastName}: [${successfullyBets.length}/${filteredMatches.length}]`
+        );
 
-      console.log(`${length} saved bet(s) for ${user.firstName} ${user.lastName}`);
+        const length = promises.length;
+        await Promise.all(promises);
+
+        console.log(
+          `${length} saved bet(s) for ${user.firstName} ${user.lastName}`
+        );
+      } catch (e) {
+        console.log(e.message);
+        console.log(
+          `x ${user.firstName} ${user.lastName}: [${0}/${
+            filteredMatches.length
+          }]`
+        );
+      }
     }
   } else {
     console.log(

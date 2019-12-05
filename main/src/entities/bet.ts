@@ -43,4 +43,13 @@ export class bet {
     @JoinColumn({ name:'userId'})
     user:user | null;
 
+
+    @Column("float",{ 
+        nullable:true,
+        default: () => "'0'",
+        precision:12,
+        name:"odds"
+        })
+    odds:number | null;
+        
 }

@@ -39,7 +39,7 @@ server.use(ddosInstance.express);
 server.use(bodyParser.json());
 server.use(bodyParser.urlencoded({ extended: true }));
 
-server.use(xlogs.logger);
+// server.use(xlogs.logger);
 
 // gzip compression
 server.use(compress());

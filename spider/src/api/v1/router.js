@@ -29,7 +29,7 @@ const URL_FRAGMENT = "#/IP/";
 const DELAY_BASIC_RAW = 1200;
 const DELAY_SLOW_RAW = 2200;
 
-const DELAY_TYPING = 357;
+const DELAY_TYPING = 157;
 
 const DELAY_FACTOR = 0.1;
 
@@ -535,6 +535,112 @@ router.post("/check", async (req, res) => {
   res.send({ finishedMatches, unfinishedMatches });
 });
 
+router.use("/open/:ip", async (req, res) => {
+  try {
+    const ip = req.params.ip;
+
+    const browser = await launchBrowser(true);
+    const page = await browser.newPage();
+
+    await page.emulate(iPhonex);
+    const options = {
+      // username: "lum-customer-hl_999dc5f5-zone-static_res",
+      // username: "lum-customer-hl_999dc5f5-zone-static",
+      // username: "lum-customer-hl_999dc5f5-zone-static_res-country-de",
+      // username: "lum-customer-hl_999dc5f5-zone-static-country-de",
+      username: `lum-customer-hl_999dc5f5-zone-static-ip-${ip}`,
+      // username: `lum-customer-hl_999dc5f5-zone-static-country-br`,
+      // password: "s6z6grmdpdyx"
+      password: "juohlhy66kgb"
+    };
+    await page.authenticate(options);
+    await page.goto(`${BASE_URL}${URL_FRAGMENT}`);
+    await page.waitForSelector(".ipo-Fixture");
+    let successfullyBets = [];
+    await page.exposeFunction("pushSuccessfullyBet", a =>
+      successfullyBets.push(a)
+    );
+
+    await page.evaluate(
+      async (DELAY_TYPING, DELAY_SLOW, DELAY_BASIC) => {
+        function sleep(ms) {
+          return new Promise(resolve => {
+            setTimeout(resolve, ms);
+          });
+        }
+
+        const getRandomDelay = (slow, typing) => {
+          if (typing) {
+            let msVariant = Math.floor(Math.random() * 50);
+
+            const positiveOrNot = Math.floor(Math.random() * 1);
+
+            if (positiveOrNot === 0) {
+              msVariant *= -1;
+            }
+
+            return DELAY_TYPING + msVariant;
+          } else {
+            let msVariant = Math.floor(Math.random() * 100);
+
+            const positiveOrNot = Math.floor(Math.random() * 1);
+
+            if (positiveOrNot === 0) {
+              msVariant *= -1;
+            }
+
+            if (slow && !typing) return DELAY_SLOW + msVariant;
+
+            return DELAY_BASIC + msVariant;
+          }
+        };
+
+        const typeInput = async (input, word) => {
+          for (let i = 0; i < word.length; i++) {
+            input.value = `${input.value}${word[i]}`;
+            await sleep(getRandomDelay(true, true));
+          }
+
+          return true;
+        };
+
+        const loginButton = document.querySelector(
+          ".hm-LoggedOutButtons_Login"
+        );
+
+        await sleep(getRandomDelay());
+        loginButton.click();
+
+        const emailInput = document.querySelector(".lm-StandardLogin_Username");
+        const passwordInput = document.querySelector(
+          ".lm-StandardLogin_Password"
+        );
+
+        await sleep(getRandomDelay(true));
+
+        emailInput.value = "";
+        emailInput.focus();
+        await typeInput(emailInput, "peuvictor22");
+        await sleep(getRandomDelay());
+
+        await sleep(getRandomDelay(true));
+        await typeInput(passwordInput, "Camila22");
+        await sleep(getRandomDelay(true));
+        const okButton = document.querySelector(
+          ".lm-StandardLogin_LoginButton"
+        );
+        okButton.click();
+      },
+      DELAY_TYPING,
+      DELAY_SLOW,
+      DELAY_BASIC
+    );
+  } catch (e) {
+    console.log(e.message);
+  }
+  res.status(200).send();
+});
+
 router.use("/bet/match", async (req, res) => {
   try {
     const browser = await launchBrowser(true);
@@ -545,7 +651,7 @@ router.use("/bet/match", async (req, res) => {
     await page.emulate(iPhonex);
     const ip = req.body.ip;
     const { username, password } = req.body.user;
-    const { matches } = req.body;
+    const { matches, maxOdd, valueToBet } = req.body;
     console.log(ip);
     const languageURL = "https://mobile.bet365.com/languages.aspx";
     const options = {
@@ -591,9 +697,8 @@ router.use("/bet/match", async (req, res) => {
     await page.waitForSelector(".ipo-Fixture");
 
     let successfullyBets = [];
-    await page.exposeFunction(
-      "setSuccessfullyBets",
-      array => (successfullyBets = array)
+    await page.exposeFunction("pushSuccessfullyBet", a =>
+      successfullyBets.push(a)
     );
 
     await page.evaluate(
@@ -681,99 +786,127 @@ router.use("/bet/match", async (req, res) => {
       password
     );
 
-    console.log("Feche o modal...");
     await sleep(6000);
-    console.log("loading url...");
-    await page.goto(matches[0].url);
-    await page.waitForSelector(".ipe-EventViewMarketTabs");
-    await sleep(1000);
-    await page.evaluate(async match => {
-      let oddsValue = 0;
 
-      function sleep(ms) {
-        return new Promise(resolve => {
-          setTimeout(resolve, ms);
-        });
-      }
-
-      const enterValue = async value => {
-        const valueStr = value.toString();
-        for (let i = 0; i < valueStr.length; i++) {
-          let index = 0;
-          if (valueStr[i] == "0") index = 10;
-          else index = parseInt(valueStr[i]) - 1;
-
-          document.querySelector(".qb-Keypad").children[index].click();
-          await sleep(900);
-        }
-      };
-
-      let returnValue = false;
+    for (let index = 0; index < matches.length; index++) {
+      const currentMatch = matches[index];
+      try {
+        console.log(
+          `Making bet ${currentMatch.teamA} ${currentMatch.teamB}, max odds: ${maxOdd}, value: ${valueToBet}`
+        );
+      } catch {}
+      await page.goto(currentMatch.url);
+      await page.waitForSelector(".ipe-EventViewMarketTabs");
       await sleep(1000);
-      const tabChildren = document.querySelectorAll(
-        ".ipe-EventViewTabLink + div:not(.Hidden)"
-      );
 
-      console.log("tabs: ", tabChildren);
-      const array = Array.prototype.slice.call(tabChildren);
+      await page.evaluate(
+        async (match, maxOdd, valueToBet) => {
+          let oddsValue = 0;
 
-      const goalsTabTitle = "Goals";
-      const goalsTabTitlePT = "Gols";
-      let goalsTab = null;
-      for (let i = array.length - 1; i > 0; i -= 1) {
-        console.log(array[i].innerHTML);
-        if (
-          array[i].innerHTML.includes(goalsTabTitle) ||
-          array[i].innerHTML.includes(goalsTabTitlePT)
-        ) {
-          goalsTab = array[i];
-          console.log("found tab");
-          i = 0;
-        }
-      }
-      if (goalsTab) {
-        goalsTab.click();
-        await sleep(1000);
-        const items = document.querySelectorAll(".ipe-Market");
-        const children = Array.prototype.slice.call(items);
-        for (let k = 0; k < children.length; k += 1) {
-          const groupTabTitle =
-            children[k].firstElementChild.children[0].innerHTML;
-          if (
-            groupTabTitle.includes("Match Goals") ||
-            (groupTabTitle.includes("Partida") &&
-              groupTabTitle.includes("Gols"))
-          ) {
-            goalsTab = children[k];
-            const goalsValues = goalsTab.querySelector(".ipe-MarketContainer");
-            const countPossibilitiesChildren =
-              goalsValues.lastElementChild.children;
-            const countPossibilitiesArray = Array.prototype.slice.call(
-              countPossibilitiesChildren
-            );
-            if (countPossibilitiesArray.length >= 3) {
-              goalsValues.lastElementChild.lastElementChild.click();
-              await sleep(1000);
-              document.querySelector(".qb-DetailsContainer").click();
+          function sleep(ms) {
+            return new Promise(resolve => {
+              setTimeout(resolve, ms);
+            });
+          }
 
-              await sleep(1000);
-              await enterValue(5);
-              console.log("ready to bet...");
+          const enterValue = async value => {
+            const valueStr = value.toString();
+            for (let i = 0; i < valueStr.length; i++) {
+              let index = 0;
+              if (valueStr[i] == "0") index = 10;
+              else index = parseInt(valueStr[i]) - 1;
 
-              await window.setSuccessfullyBets([match]);
-              document.querySelector(".qb-PlaceBetButton").click();
-              // alert(`Odds: ${oddsValue}`);
-              await sleep(1000);
-              k = children.length;
+              document.querySelector(".qb-Keypad").children[index].click();
+              await sleep(900);
+            }
+          };
+
+          let returnValue = false;
+          await sleep(1000);
+          const tabChildren = document.querySelectorAll(
+            ".ipe-EventViewTabLink + div:not(.Hidden)"
+          );
+
+          console.log("tabs: ", tabChildren);
+          const array = Array.prototype.slice.call(tabChildren);
+
+          const goalsTabTitle = "Goals";
+          const goalsTabTitlePT = "Gols";
+          let goalsTab = null;
+          for (let i = array.length - 1; i > 0; i -= 1) {
+            console.log(array[i].innerHTML);
+            if (
+              array[i].innerHTML.includes(goalsTabTitle) ||
+              array[i].innerHTML.includes(goalsTabTitlePT)
+            ) {
+              goalsTab = array[i];
+              console.log("found tab");
+              i = 0;
             }
           }
-        }
-      } else {
-        console.log("not found");
-      }
-    }, matches[0]);
+          if (goalsTab) {
+            goalsTab.click();
+            await sleep(1000);
+            const items = document.querySelectorAll(".ipe-Market");
+            const children = Array.prototype.slice.call(items);
+            for (let k = 0; k < children.length; k += 1) {
+              const groupTabTitle =
+                children[k].firstElementChild.children[0].innerHTML;
+              if (
+                groupTabTitle.includes("Match Goals") ||
+                (groupTabTitle.includes("Partida") &&
+                  groupTabTitle.includes("Gols"))
+              ) {
+                goalsTab = children[k];
+                const goalsValues = goalsTab.querySelector(
+                  ".ipe-MarketContainer"
+                );
+                const countPossibilitiesChildren =
+                  goalsValues.lastElementChild.children;
+                const countPossibilitiesArray = Array.prototype.slice.call(
+                  countPossibilitiesChildren
+                );
+                if (countPossibilitiesArray.length >= 3) {
+                  const betOdds = goalsValues.lastElementChild.lastElementChild.querySelector(
+                    ".ipe-Participant_OppOdds"
+                  ).innerHTML;
+                  try {
+                    oddsValue = parseFloat(betOdds);
+                  } catch {}
+                  console.log("odds:", oddsValue);
+                  if (oddsValue <= maxOdd) {
+                    goalsValues.lastElementChild.lastElementChild.click();
+                    await sleep(1000);
+                    document.querySelector(".qb-DetailsContainer").click();
 
-    // await browser.close();
+                    await sleep(1000);
+                    await enterValue(1);
+                    console.log("ready to bet...");
+                    match.odds = betOdds;
+                    match.value = valueToBet;
+                    await window.pushSuccessfullyBet(match);
+                    document.querySelector(".qb-PlaceBetButton").click();
+                    // alert(`Odds: ${oddsValue}`);
+                    //document.querySelector("div.qb-PlaceBetButton") //loaded
+                    //document.querySelector("div.qb-MessageContainer_Indicator").click() //click
+                    await sleep(10000);
+                  }else{
+                    console.log(`Match ${match.url} odds is now ${oddsValue} and the limit is ${maxOdd}`)
+                  }
+                  k = children.length;
+                }
+              }
+            }
+          } else {
+            console.log("not found");
+          }
+        },
+        currentMatch,
+        maxOdd,
+        valueToBet
+      );
+    }
+    await browser.close();
     res.send({ successfullyBets });
   } catch {
     res.send({ successfullyBets: [] });
