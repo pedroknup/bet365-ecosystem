@@ -23,14 +23,15 @@ const devices = require("puppeteer/DeviceDescriptors");
 const iPhonex = devices["iPhone X"];
 
 const moment = require("moment");
+
 const BASE_URL = "https://www.bet365.com/";
 const URL_FRAGMENT = "#/IP/";
-const DELAY_BASIC_RAW = 1500;
-const DELAY_SLOW_RAW = 3000;
+const DELAY_BASIC_RAW = 1200;
+const DELAY_SLOW_RAW = 2200;
 
 const DELAY_TYPING = 357;
 
-const DELAY_FACTOR = 0.2;
+const DELAY_FACTOR = 0.1;
 
 const DELAY_BASIC = DELAY_BASIC_RAW * DELAY_FACTOR;
 const DELAY_SLOW = DELAY_SLOW_RAW * DELAY_FACTOR;
@@ -258,12 +259,17 @@ const setIds = async (page, previousMatches) =>
   page.evaluate(async previousMatches => {
     // const matchesBlocks = document.querySelectorAll(".ipo-Fixture_TableRow");
     const matchesBlocks = document.querySelectorAll(".ipo-Fixture");
-
+    const matchesBlocksArray = Array.prototype.slice.call(matchesBlocks);
     // console.log("found", matches);
     const matchesObj = [];
     // eslint-disable-next-line no-unused-vars
-
-    [].forEach.call(matchesBlocks, item => {
+    function sleep(ms) {
+      return new Promise(resolve => {
+        setTimeout(resolve, ms);
+      });
+    }
+    for (let i = 0; i < matchesBlocksArray.length; i++) {
+      const item = matchesBlocksArray[i];
       const teamStackArray = item.querySelectorAll(".ipo-Fixture_Truncator");
       const teamStack = Array.prototype.slice.call(teamStackArray);
       const time = item.querySelector(".ipo-Fixture_Time").firstChild.innerHTML;
@@ -282,11 +288,14 @@ const setIds = async (page, previousMatches) =>
         moreThan,
         lessThan
       });
-    });
+    }
     // console.log(matchesObj);
 
     previousMatches.forEach(item => {
-      const foundMatch = matchesObj.find(item2 => item2.teamA === item.teamA);
+      const foundMatch = matchesObj.find(item2 => {
+        console.log(item.teamA, item2.teamA);
+        return item2.teamA.includes(item.teamA);
+      });
 
       if (foundMatch) {
         foundMatch.element.setAttribute("id", item.id);
@@ -380,6 +389,8 @@ const fetchMatches = async () => {
       if (foundMatch) {
         console.log(chalk.white.dim(`Looking for goals tab...`));
         await sleep(delay);
+
+        await page.waitForSelector(".ipe-EventViewTabLink");
         const odds = await getOdds(page);
         const URL = await getURL(page);
         matches[i].url = URL;
@@ -414,7 +425,7 @@ const fetchMatches = async () => {
           `On main page. Getting all ids again in ${delay / 1000}s...`
         )
       );
-      await sleep(delay);
+      await page.waitForSelector(".ipo-Fixture");
       await setIds(page, matches);
     }
 
@@ -470,156 +481,303 @@ router.use("/match", async (req, res) => {
   res.send(matches);
 });
 
-router.use("/bet/match", async (req, res) => {
-  const browser = await launchBrowser(true);
-  const page = await browser.newPage();
-  const pageLanguage = await browser.newPage();
+router.post("/check", async (req, res) => {
+  const { matches } = req.body;
 
-  await pageLanguage.emulate(iPhonex);
-  await page.emulate(iPhonex);
-  const ip = req.body.ip;
-  console.log(ip);
-  const languageURL = "https://mobile.bet365.com/languages.aspx";
-  const options = {
-    // username: "lum-customer-hl_999dc5f5-zone-static_res",
-    // username: "lum-customer-hl_999dc5f5-zone-static",
-    // username: "lum-customer-hl_999dc5f5-zone-static_res-country-de",
-    // username: "lum-customer-hl_999dc5f5-zone-static-country-de",
-    username: `lum-customer-hl_999dc5f5-zone-static-ip-${ip}`,
-    // username: `lum-customer-hl_999dc5f5-zone-static-country-br`,
-    // password: "s6z6grmdpdyx"
-    password: "juohlhy66kgb"
+  const browser = await launchBrowser(false);
+  let finishedMatches = [];
+  let unfinishedMatches = [];
+
+  const checkMatch = async match => {
+    const page = await browser.newPage();
+    await page.emulate(iPhonex);
+
+    await page.exposeFunction("pushFinishedMatch", match =>
+      finishedMatches.push(match)
+    );
+    await page.exposeFunction("pushUninishedMatch", match =>
+      unfinishedMatches.push(match)
+    );
+    await page.goto(match.url);
+    await page.waitForSelector(".hm-HeaderModule");
+
+    await sleep(2000);
+    await page.evaluate(async match => {
+      const finishedLabel = document.querySelector(".ml1-Anims_H2Text");
+      const matchBlock = document.querySelector(".ipo-Fixture_GameDetail");
+      // if (finishedLabel) {
+      //   if (finishedLabel.innerHTML.toLowerCase().includes("eind"));
+      //   await window.pushFinishedMatch(match);
+      // } else {
+      //   if (!!matchBlock) await window.pushFinishedMatch(match);
+      // }
+      if (match.url != window.location.href) {
+        await window.pushFinishedMatch(match);
+      } else {
+        await window.pushUninishedMatch(match);
+      }
+      console.log(window.location.href);
+      console.log(match.url);
+      console.log(finishedLabel);
+      console.log(matchBlock);
+      return true;
+    }, match);
+
+    // await page.close();
   };
-  await page.authenticate(options);
-  await sleep(1000);
-
-  await pageLanguage.authenticate(options);
-
-  await pageLanguage.goto(languageURL);
-
-  await pageLanguage.waitForSelector(".menuRow");
-
-  const closed = await pageLanguage.evaluate(async () => {
-    function sleep(ms) {
-      return new Promise(resolve => {
-        setTimeout(resolve, ms);
-      });
-    }
-
-    const languages = document.querySelector(".menuRow");
-    await sleep(250);
-    console.log(languages);
-    languages.firstElementChild.click();
-    return true;
+  const promises = [];
+  matches.forEach(item => {
+    promises.push(checkMatch(item));
   });
+  await Promise.all(promises);
 
-  await pageLanguage.waitForSelector(".hm-HeaderModule");
-  await sleep(250);
-  await pageLanguage.close();
+  await browser.close();
+  res.send({ finishedMatches, unfinishedMatches });
+});
 
-  await sleep(1000);
-  await page.goto(`${BASE_URL}${URL_FRAGMENT}`);
+router.use("/bet/match", async (req, res) => {
+  try {
+    const browser = await launchBrowser(true);
+    const page = await browser.newPage();
+    const pageLanguage = await browser.newPage();
 
-  await page.waitForSelector(".ipo-Fixture");
+    await pageLanguage.emulate(iPhonex);
+    await page.emulate(iPhonex);
+    const ip = req.body.ip;
+    const { username, password } = req.body.user;
+    const { matches } = req.body;
+    console.log(ip);
+    const languageURL = "https://mobile.bet365.com/languages.aspx";
+    const options = {
+      // username: "lum-customer-hl_999dc5f5-zone-static_res",
+      // username: "lum-customer-hl_999dc5f5-zone-static",
+      // username: "lum-customer-hl_999dc5f5-zone-static_res-country-de",
+      // username: "lum-customer-hl_999dc5f5-zone-static-country-de",
+      username: `lum-customer-hl_999dc5f5-zone-static-ip-${ip}`,
+      // username: `lum-customer-hl_999dc5f5-zone-static-country-br`,
+      // password: "s6z6grmdpdyx"
+      password: "juohlhy66kgb"
+    };
+    await page.authenticate(options);
+    await sleep(1000);
 
-  // await page.exposeFunction("setFound", hasFound => (found = hasFound));
+    await pageLanguage.authenticate(options);
 
-  // // await page.evaluate(async () => {
-  // //   const okButton = document
-  // //     .querySelector(".hm-Login")
-  // //     .querySelector("button");
+    await pageLanguage.goto(languageURL);
 
-  // //   await window.setFound(!!okButton);
-  // // });
+    await pageLanguage.waitForSelector(".menuRow");
 
-  // console.log(found);
-  // if (!found) {
-  //   console.log(chalk.red("IP not valid"));
-  //   await browser.close();
-  //   res.send(200);
-  //   return;
-  // }
-
-  // await sleep(3000000);
-  await page.evaluate(
-    async (DELAY_TYPING, DELAY_SLOW, DELAY_BASIC) => {
+    const closed = await pageLanguage.evaluate(async () => {
       function sleep(ms) {
         return new Promise(resolve => {
           setTimeout(resolve, ms);
         });
       }
 
-      const getRandomDelay = (slow, typing) => {
-        if (typing) {
-          let msVariant = Math.floor(Math.random() * 50);
+      const languages = document.querySelector(".menuRow");
+      await sleep(250);
+      console.log(languages);
+      languages.firstElementChild.click();
+      return true;
+    });
 
-          const positiveOrNot = Math.floor(Math.random() * 1);
+    await pageLanguage.waitForSelector(".hm-HeaderModule");
+    await sleep(250);
+    await pageLanguage.close();
 
-          if (positiveOrNot === 0) {
-            msVariant *= -1;
+    await sleep(1000);
+    await page.goto(`${BASE_URL}${URL_FRAGMENT}`);
+
+    await page.waitForSelector(".ipo-Fixture");
+
+    let successfullyBets = [];
+    await page.exposeFunction(
+      "setSuccessfullyBets",
+      array => (successfullyBets = array)
+    );
+
+    await page.evaluate(
+      async (
+        DELAY_TYPING,
+        DELAY_SLOW,
+        DELAY_BASIC,
+        matches,
+        username,
+        password
+      ) => {
+        function sleep(ms) {
+          return new Promise(resolve => {
+            setTimeout(resolve, ms);
+          });
+        }
+
+        const getRandomDelay = (slow, typing) => {
+          if (typing) {
+            let msVariant = Math.floor(Math.random() * 50);
+
+            const positiveOrNot = Math.floor(Math.random() * 1);
+
+            if (positiveOrNot === 0) {
+              msVariant *= -1;
+            }
+
+            return DELAY_TYPING + msVariant;
+          } else {
+            let msVariant = Math.floor(Math.random() * 100);
+
+            const positiveOrNot = Math.floor(Math.random() * 1);
+
+            if (positiveOrNot === 0) {
+              msVariant *= -1;
+            }
+
+            if (slow && !typing) return DELAY_SLOW + msVariant;
+
+            return DELAY_BASIC + msVariant;
+          }
+        };
+
+        const typeInput = async (input, word) => {
+          for (let i = 0; i < word.length; i++) {
+            input.value = `${input.value}${word[i]}`;
+            await sleep(getRandomDelay(true, true));
           }
 
-          return DELAY_TYPING + msVariant;
-        } else {
-          let msVariant = Math.floor(Math.random() * 100);
+          return true;
+        };
 
-          const positiveOrNot = Math.floor(Math.random() * 1);
+        const loginButton = document.querySelector(
+          ".hm-LoggedOutButtons_Login"
+        );
 
-          if (positiveOrNot === 0) {
-            msVariant *= -1;
-          }
+        await sleep(getRandomDelay());
+        loginButton.click();
 
-          if (slow && !typing) return DELAY_SLOW + msVariant;
+        const emailInput = document.querySelector(".lm-StandardLogin_Username");
+        const passwordInput = document.querySelector(
+          ".lm-StandardLogin_Password"
+        );
 
-          return DELAY_BASIC + msVariant;
+        await sleep(getRandomDelay(true));
+
+        emailInput.value = "";
+        emailInput.focus();
+        await typeInput(emailInput, username);
+        await sleep(getRandomDelay());
+
+        await sleep(getRandomDelay(true));
+        await typeInput(passwordInput, password);
+        await sleep(getRandomDelay(true));
+        const okButton = document.querySelector(
+          ".lm-StandardLogin_LoginButton"
+        );
+        okButton.click();
+      },
+      DELAY_TYPING,
+      DELAY_SLOW,
+      DELAY_BASIC,
+      matches,
+      username,
+      password
+    );
+
+    console.log("Feche o modal...");
+    await sleep(6000);
+    console.log("loading url...");
+    await page.goto(matches[0].url);
+    await page.waitForSelector(".ipe-EventViewMarketTabs");
+    await sleep(1000);
+    await page.evaluate(async match => {
+      let oddsValue = 0;
+
+      function sleep(ms) {
+        return new Promise(resolve => {
+          setTimeout(resolve, ms);
+        });
+      }
+
+      const enterValue = async value => {
+        const valueStr = value.toString();
+        for (let i = 0; i < valueStr.length; i++) {
+          let index = 0;
+          if (valueStr[i] == "0") index = 10;
+          else index = parseInt(valueStr[i]) - 1;
+
+          document.querySelector(".qb-Keypad").children[index].click();
+          await sleep(900);
         }
       };
 
-      const typeInput = async (input, word) => {
-        for (let i = 0; i < word.length; i++) {
-          input.value = `${input.value}${word[i]}`;
-          await sleep(getRandomDelay(true, true));
-        }
-
-        return true;
-      };
-
-      const loginButton = document.querySelector(".hm-LoggedOutButtons_Login");
-
-      await sleep(getRandomDelay());
-      loginButton.click();
-
-      const emailInput = document.querySelector(".lm-StandardLogin_Username");
-      const passwordInput = document.querySelector(
-        ".lm-StandardLogin_Password"
+      let returnValue = false;
+      await sleep(1000);
+      const tabChildren = document.querySelectorAll(
+        ".ipe-EventViewTabLink + div:not(.Hidden)"
       );
 
-      await sleep(getRandomDelay(true));
-      const email = "phknup";
-      const password = "12012012Pk";
-      emailInput.value = "";
-      emailInput.focus();
-      await typeInput(emailInput, email);
-      await sleep(getRandomDelay());
+      console.log("tabs: ", tabChildren);
+      const array = Array.prototype.slice.call(tabChildren);
 
-      await sleep(getRandomDelay(true));
-      await typeInput(passwordInput, password);
-      await sleep(getRandomDelay(true));
-      const okButton = document.querySelector(".lm-StandardLogin_LoginButton");
-      okButton.click();
+      const goalsTabTitle = "Goals";
+      const goalsTabTitlePT = "Gols";
+      let goalsTab = null;
+      for (let i = array.length - 1; i > 0; i -= 1) {
+        console.log(array[i].innerHTML);
+        if (
+          array[i].innerHTML.includes(goalsTabTitle) ||
+          array[i].innerHTML.includes(goalsTabTitlePT)
+        ) {
+          goalsTab = array[i];
+          console.log("found tab");
+          i = 0;
+        }
+      }
+      if (goalsTab) {
+        goalsTab.click();
+        await sleep(1000);
+        const items = document.querySelectorAll(".ipe-Market");
+        const children = Array.prototype.slice.call(items);
+        for (let k = 0; k < children.length; k += 1) {
+          const groupTabTitle =
+            children[k].firstElementChild.children[0].innerHTML;
+          if (
+            groupTabTitle.includes("Match Goals") ||
+            (groupTabTitle.includes("Partida") &&
+              groupTabTitle.includes("Gols"))
+          ) {
+            goalsTab = children[k];
+            const goalsValues = goalsTab.querySelector(".ipe-MarketContainer");
+            const countPossibilitiesChildren =
+              goalsValues.lastElementChild.children;
+            const countPossibilitiesArray = Array.prototype.slice.call(
+              countPossibilitiesChildren
+            );
+            if (countPossibilitiesArray.length >= 3) {
+              goalsValues.lastElementChild.lastElementChild.click();
+              await sleep(1000);
+              document.querySelector(".qb-DetailsContainer").click();
 
-      return true;
-    },
-    DELAY_TYPING,
-    DELAY_SLOW,
-    DELAY_BASIC
-  );
-  await sleep(getRandomDelay(true));
-  await page.goto("https://mobile.bet365.com/#/IP/EV15449561382C1/");
-  await sleep(30000);
-  await browser.close();
+              await sleep(1000);
+              await enterValue(5);
+              console.log("ready to bet...");
 
-  res.send("OK :D");
+              await window.setSuccessfullyBets([match]);
+              document.querySelector(".qb-PlaceBetButton").click();
+              // alert(`Odds: ${oddsValue}`);
+              await sleep(1000);
+              k = children.length;
+            }
+          }
+        }
+      } else {
+        console.log("not found");
+      }
+    }, matches[0]);
+
+    // await browser.close();
+    res.send({ successfullyBets });
+  } catch {
+    res.send({ successfullyBets: [] });
+  }
 });
 
 router.use("/health", async (req, res) => {

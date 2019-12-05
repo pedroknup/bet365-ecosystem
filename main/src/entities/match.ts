@@ -68,6 +68,14 @@ export class match {
     odds:number;
         
 
+    @Column("varchar",{ 
+        nullable:false,
+        length:95,
+        name:"url"
+        })
+    url:string;
+        
+
    
     @OneToMany(()=>bet, (bet: bet)=>bet.match,{ onDelete: 'NO ACTION' ,onUpdate: 'NO ACTION' })
     bets:bet[];

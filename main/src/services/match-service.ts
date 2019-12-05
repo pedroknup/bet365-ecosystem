@@ -7,9 +7,11 @@ import { getRepository, MoreThan } from "typeorm";
 import { match } from "../entities/match";
 import { user } from "../entities/user";
 import { notEqual } from "assert";
+import { IMatch } from "./match-service";
+import { bet } from '../entities/bet';
 
 export interface IMatch {
-  id: string;
+  id: number;
   teamA: string;
   teamB: string;
   scoreA: number;
@@ -139,7 +141,7 @@ export default class Main {
         where: { teamA: item.teamA, teamB: item.teamB }
       });
       if (foundMatch) {
-        finalMatches.push({ ...item, id: `id-${foundMatch.id}` });
+        finalMatches.push({ ...item, id: foundMatch.id });
         // console.log(
         //   `Match ${item.teamA} x ${item.teamB} found. Id: ${foundMatch.id}`
         // );
@@ -149,6 +151,7 @@ export default class Main {
         newMatch.teamB = item.teamB;
         newMatch.scoreA = item.scoreA;
         newMatch.scoreB = item.scoreB;
+        newMatch.url = item.url;
         newMatch.odds = item.odds;
         newMatch.date = new Date();
 
@@ -161,7 +164,8 @@ export default class Main {
               scoreA: newMatch.scoreA,
               scoreB: newMatch.scoreB,
               odds: newMatch.odds,
-              id: `${result.id}`,
+              url: newMatch.url,
+              id: result.id,
               time: "",
               moreThan: 0,
               lessThan: 0
@@ -178,27 +182,142 @@ export default class Main {
       }
     });
 
-    if (promises.length>0)
-    console.log(chalk.greenBright(`${promises.length} new matches.`));
+    if (promises.length > 0)
+      console.log(chalk.greenBright(`${promises.length} new matches.`));
     await Promise.all(promises);
 
-    Main.makeBetAllUsers(filteredMatches);
+    await Main.makeBetAllUsers(filteredMatches);
     return finalMatches;
   };
 
   static makeBetAllUsers = async (matches: IMatch[]) => {
     const userRepository = getRepository(user);
-    const users = await userRepository.find({});
-    if (matches.length > 0)
+    const users = await userRepository.find({
+      relations: ["bets", "bets.match"]
+    });
+    const threeHoursAgo = new Date();
+    const matchesToCheck = [];
+    threeHoursAgo.setHours(threeHoursAgo.getHours() - 3);
+    for (let i = 0; i < users.length; i++) {
+      const possibleUnfinishedMatches = [];
+      users[i].bets.forEach(bet => {
+        if (bet.match.date >= threeHoursAgo) {
+          possibleUnfinishedMatches.push(bet);
+          matchesToCheck.push(bet);
+        }
+      });
+      users[i].bets = possibleUnfinishedMatches;
+    }
+
+    const unredundantMatches = [];
+    matchesToCheck.forEach(item => {
+      if (!unredundantMatches.find(a => a.id === item.id)) {
+        unredundantMatches.push(item);
+      }
+    });
+
+    //check what matches are finished
+    if (unredundantMatches.length > 0) {
+      const response = await axios.post("http://localhost:3002/check", {
+        matches: unredundantMatches
+      });
+      const { unfinishedMatches } = response.data;
       console.log(
-        chalk.black.bgGreen(
-          `Creating bets for ${matches.length} matches for ${chalk.red.bgGreen(
-            ` ${users.length} `
-          )} users`
+        `${unfinishedMatches.length}/${unredundantMatches.length} unfinished matches`
+      );
+
+      for (let i = 0; i < users.length; i++) {
+        users[i].bets = unfinishedMatches.filter(item =>
+          users[i].bets.some(a => a.id == item.id)
+        );
+      }
+    } else {
+      for (let i = 0; i < users.length; i++) {
+        users[i].bets = [];
+      }
+    }
+
+    if (matches.length > 0) {
+      console.log(
+        chalk.greenBright.bold(
+          `Creating bets for ${matches.length} matches for ${users.length} users [new bet/bets]:`
         )
       );
+      const promises = [];
+      users.forEach(item => {
+        if (item.bets.length === 0) {
+          promises.push(makeBetUser(item, [matches[0]]));
+          console.log(
+            `${item.firstName} doesn't have any active bet(s). Making the bet`
+          );
+        } else {
+          console.log(
+            `${item.firstName} already have ${item.bets.length} active bet(s)`
+          );
+        }
+      });
+      console.log(chalk.blueBright(`New bets: [success/bets]`));
+      await Promise.all(promises);
+      console.log(chalk.greenBright("Done"));
+    }
+    return true;
   };
 }
+const getUnfinishedMatches = async matches => {};
+const makeBetUser = async (
+  user: user,
+  matches: IMatch[]
+): Promise<IMatch[]> => {
+  const filteredMatches = matches.filter(
+    item => !user.bets.some(bet => bet.match.id === item.id)
+  );
+  console.log(
+    chalk.yellow.dim(
+      `→ ${user.firstName} ${user.lastName}: ${filteredMatches.length}/${matches.length}`
+    )
+  );
+  if (user.betUsername && user.betPassword) {
+    if (filteredMatches.length > 0) {
+      const response = await axios.post("http://localhost:3002/bet/match", {
+        user: {
+          username: user.betUsername,
+          password: user.betPassword
+        },
+        ip: "89.185.76.16",
+        matches: filteredMatches
+      });
+
+      const successfullyBets = response.data.successfullyBets;
+
+      const promises = [];
+      const betRepository = getRepository(bet);
+      successfullyBets.forEach((item)=>{
+        const newBet = new bet();
+        newBet.match = item;
+        newBet.user = user;
+        newBet.value = 5;
+       promises.push(betRepository.save(newBet));
+      })
+      
+      console.log(
+        `✓ ${user.firstName} ${user.lastName}: [${successfullyBets.length}/${filteredMatches.length}]`
+      );
+
+      const length = promises.length;
+      await Promise.all(promises);
+
+      console.log(`${length} saved bet(s) for ${user.firstName} ${user.lastName}`);
+    }
+  } else {
+    console.log(
+      chalk.red(
+        `${user.firstName} ${user.lastName} doesn't have a username and/or password.`
+      )
+    );
+  }
+
+  return filteredMatches;
+};
 
 function sleep(ms) {
   return new Promise(resolve => {
