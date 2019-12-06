@@ -36,7 +36,7 @@ const DELAY_FACTOR = 0.1;
 const DELAY_BASIC = DELAY_BASIC_RAW * DELAY_FACTOR;
 const DELAY_SLOW = DELAY_SLOW_RAW * DELAY_FACTOR;
 
-const MINIMUM_TIME = 70;
+const MINIMUM_TIME = 80;
 
 const chalk = require("chalk");
 const express = require("express");
@@ -132,48 +132,53 @@ const getMatches = async page =>
     [].forEach.call(matchesBlocks, item => {
       const teamStackArray = item.querySelectorAll(".ipo-Fixture_Truncator");
       const teamStack = Array.prototype.slice.call(teamStackArray);
-      const time = item.querySelector(".ipo-Fixture_Time").firstChild.innerHTML;
-      const team1 = teamStack[0].innerHTML;
+      if (!item.querySelector(".ipo-Fixture_Time")) {
+        
+      } else {
+        const time = item.querySelector(".ipo-Fixture_Time").firstChild
+          .innerHTML;
+        const team1 = teamStack[0].innerHTML;
 
-      // const mainMarkersScore = item.querySelector(".ipo-MainMarkets")
-      //   .lastElementChild;
-      // const participantCentered = mainMarkersScore.querySelectorAll(
-      //   ".gll-ParticipantCentered"
-      // );
+        // const mainMarkersScore = item.querySelector(".ipo-MainMarkets")
+        //   .lastElementChild;
+        // const participantCentered = mainMarkersScore.querySelectorAll(
+        //   ".gll-ParticipantCentered"
+        // );
 
-      let moreThan = 0;
+        let moreThan = 0;
 
-      // let lessThan = 0;
+        // let lessThan = 0;
 
-      // if (participantCentered.length > 0) {
-      //   moreThan = participantCentered[0].querySelector(
-      //     ".gll-ParticipantCentered_Odds"
-      //   ).innerHTML;
+        // if (participantCentered.length > 0) {
+        //   moreThan = participantCentered[0].querySelector(
+        //     ".gll-ParticipantCentered_Odds"
+        //   ).innerHTML;
 
-      //   lessThan = participantCentered[1].querySelector(
-      //     ".gll-ParticipantCentered_Odds"
-      //   ).innerHTML;
-      // }
+        //   lessThan = participantCentered[1].querySelector(
+        //     ".gll-ParticipantCentered_Odds"
+        //   ).innerHTML;
+        // }
 
-      const team2 = teamStack[1].innerHTML;
-      const boundaries = item.getBoundingClientRect();
+        const team2 = teamStack[1].innerHTML;
+        const boundaries = item.getBoundingClientRect();
 
-      currentId += 1;
-      const newId = `id-${currentId}`;
+        currentId += 1;
+        const newId = `id-${currentId}`;
 
-      item.setAttribute("id", newId);
-      matchesObj.push({
-        id: newId,
-        date: new Date(),
-        time,
-        teamA: team1,
-        scoreA: 0,
-        teamB: team2,
-        scoreB: 0,
-        moreThan: 0,
-        lessThan: 0,
-        top: boundaries.top
-      });
+        item.setAttribute("id", newId);
+        matchesObj.push({
+          id: newId,
+          date: new Date(),
+          time,
+          teamA: team1,
+          scoreA: 0,
+          teamB: team2,
+          scoreB: 0,
+          moreThan: 0,
+          lessThan: 0,
+          top: boundaries.top
+        });
+      }
     });
     // console.log(matchesObj);
 
@@ -665,11 +670,11 @@ router.use("/open/:ip", async (req, res) => {
       for (let attempts = 0; attempts < 10; attempts++) {
         const label = document.querySelector(".hm-LoggedInButtons_MyBetsCount");
         if (label) {
-          const count = label.innerHTML
+          const count = label.innerHTML;
           alert(count);
           return count;
         } else {
-          console.log("attempt " + attempts)
+          console.log("attempt " + attempts);
           await sleep(1000);
         }
       }
@@ -687,9 +692,9 @@ router.use("/bet/match", async (req, res) => {
   try {
     const browser = await launchBrowser(true);
     const page = await browser.newPage();
-    const pageLanguage = await browser.newPage();
+    // const pageLanguage = await browser.newPage();
 
-    await pageLanguage.emulate(iPhonex);
+    // await pageLanguage.emulate(iPhonex);
     await page.emulate(iPhonex);
     const ip = req.body.ip;
     const { username, password } = req.body.user;
@@ -709,31 +714,31 @@ router.use("/bet/match", async (req, res) => {
     await page.authenticate(options);
     await sleep(1000);
 
-    await pageLanguage.authenticate(options);
+    // await pageLanguage.authenticate(options);
 
-    await pageLanguage.goto(languageURL);
+    // await pageLanguage.goto(languageURL);
 
-    await pageLanguage.waitForSelector(".menuRow");
+    // await pageLanguage.waitForSelector(".menuRow");
 
-    const closed = await pageLanguage.evaluate(async () => {
-      function sleep(ms) {
-        return new Promise(resolve => {
-          setTimeout(resolve, ms);
-        });
-      }
+    // const closed = await pageLanguage.evaluate(async () => {
+    //   function sleep(ms) {
+    //     return new Promise(resolve => {
+    //       setTimeout(resolve, ms);
+    //     });
+    //   }
 
-      const languages = document.querySelector(".menuRow");
-      await sleep(250);
-      console.log(languages);
-      languages.firstElementChild.click();
-      return true;
-    });
+    //   const languages = document.querySelector(".menuRow");
+    //   await sleep(250);
+    //   console.log(languages);
+    //   languages.firstElementChild.click();
+    //   return true;
+    // });
 
-    await pageLanguage.waitForSelector(".hm-HeaderModule");
-    await sleep(250);
-    await pageLanguage.close();
+    // await pageLanguage.waitForSelector(".hm-HeaderModule");
+    // await sleep(250);
+    // await pageLanguage.close();
 
-    await sleep(1000);
+    // await sleep(1000);
     await page.goto(`${BASE_URL}${URL_FRAGMENT}`);
 
     await page.waitForSelector(".ipo-Fixture");
@@ -743,15 +748,8 @@ router.use("/bet/match", async (req, res) => {
       successfullyBets.push(a)
     );
 
-    await page.evaluate(
-      async (
-        DELAY_TYPING,
-        DELAY_SLOW,
-        DELAY_BASIC,
-        matches,
-        username,
-        password
-      ) => {
+    const bug = await page.evaluate(
+      async (DELAY_TYPING, DELAY_SLOW, DELAY_BASIC) => {
         function sleep(ms) {
           return new Promise(resolve => {
             setTimeout(resolve, ms);
@@ -800,6 +798,18 @@ router.use("/bet/match", async (req, res) => {
         await sleep(getRandomDelay());
         loginButton.click();
 
+        let found = false;
+        for (let attempts = 0; attempts < 12; attempts++) {
+          if (!document.querySelector(".lm-StandardLogin_Username")) {
+            await sleep(1000);
+          } else {
+            found = true;
+            attempts = 12;
+          }
+        }
+        if (!found) {
+          return "input not found. BUG";
+        }
         const emailInput = document.querySelector(".lm-StandardLogin_Username");
         const passwordInput = document.querySelector(
           ".lm-StandardLogin_Password"
@@ -809,11 +819,11 @@ router.use("/bet/match", async (req, res) => {
 
         emailInput.value = "";
         emailInput.focus();
-        await typeInput(emailInput, username);
+        await typeInput(emailInput, "peuvictor22");
         await sleep(getRandomDelay());
 
         await sleep(getRandomDelay(true));
-        await typeInput(passwordInput, password);
+        await typeInput(passwordInput, "Camila22");
         await sleep(getRandomDelay(true));
         const okButton = document.querySelector(
           ".lm-StandardLogin_LoginButton"
@@ -822,15 +832,39 @@ router.use("/bet/match", async (req, res) => {
       },
       DELAY_TYPING,
       DELAY_SLOW,
-      DELAY_BASIC,
-      matches,
-      username,
-      password
+      DELAY_BASIC
     );
+    if (bug) {
+      console.log(chalk.red(bug));
+      res.status(200).send();
+      return;
+    }
+    await page.waitForSelector(".hm-LoggedInButtons_MyBetsLabel");
 
-    await sleep(6000);
+    const count = await page.evaluate(async () => {
+      function sleep(ms) {
+        return new Promise(resolve => {
+          setTimeout(resolve, ms);
+        });
+      }
+
+      let found = false;
+      for (let attempts = 0; attempts < 10; attempts++) {
+        const label = document.querySelector(".hm-LoggedInButtons_MyBetsCount");
+        if (label) {
+          const count = label.innerHTML;
+          return count;
+        } else {
+          console.log("attempt " + attempts);
+          await sleep(1000);
+        }
+      }
+      return 0;
+    });
+
+    await sleep(2000);
     for (let index = 0; index < matches.length; index++) {
-      if (successfullyBets.length >= limitBets) {
+      if (count >= limitBets) {
         console.log("Limit of bets");
         index = matches.length;
         return;
@@ -844,11 +878,17 @@ router.use("/bet/match", async (req, res) => {
         );
       } catch {}
       try {
-        await page.goto(currentMatch.url);
-        await page.waitForSelector(".ipe-EventViewMarketTabs");
+        const newPage = await browser.newPage();
+        await newPage.emulate(iPhonex);
+        await newPage.authenticate(options);
+        await newPage.goto(currentMatch.url);
+        await newPage.waitForSelector(".ipe-EventViewMarketTabs");
+        await newPage.exposeFunction("pushSuccessfullyBet", a =>
+          successfullyBets.push(a)
+        );
         await sleep(1000);
 
-        const resultStr = await page.evaluate(
+        const resultStr = await newPage.evaluate(
           async (match, maxOdd, valueToBet) => {
             let oddsValue = 0;
 
@@ -937,7 +977,7 @@ router.use("/bet/match", async (req, res) => {
                       document.querySelector(".qb-DetailsContainer").click();
 
                       await sleep(1000);
-                      await enterValue(1);
+                      await enterValue(valueToBet);
                       console.log("ready to bet...");
                       match.odds = betOdds;
                       match.value = valueToBet;
@@ -983,6 +1023,7 @@ router.use("/bet/match", async (req, res) => {
                         }
                       }
                       await sleep(1000);
+                      await window.pushSuccessfullyBet(match);
                       return "Time out";
                     } else {
                       return `Match ${match.url} odds is now ${oddsValue} and the limit is ${maxOdd}`;

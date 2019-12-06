@@ -10,9 +10,10 @@ import { notEqual } from "assert";
 import { IMatch } from "./match-service";
 import { bet } from "../entities/bet";
 import { CLIENT_RENEG_LIMIT } from "tls";
-
+const LIMIT = 9;
 const MAXIMUM_ODDS = 1.05;
-const VALUE_TO_BET = 1;
+const VALUE_TO_BET = 10;
+const SHOULD_LIMIT_TIME = false;
 
 export interface IMatch {
   id: number;
@@ -57,54 +58,64 @@ export default class Main {
 
   static loop = async () => {
     let minutes = 0;
-    while (true) {
-      if (!(await Main.checkSpider())) {
-        console.log(
-          chalk.red(`Error. Spider service is not running. Trying again in 10s`)
-        );
-        await sleep(10000);
-      } else {
-        try {
-          const data = await Main.fetchMatches();
-          minutes = data.nextMinute * 60000;
-          if (data.matches.length > 0) {
-            const matchesFiltered = data.matches.filter(item => item.odds > 0);
-            if (matchesFiltered.length > 0) {
+    let matchesFiltered = [];
+
+    if (!(await Main.checkSpider())) {
+      console.log(
+        chalk.red(`Error. Spider service is not running. Trying again in 10s`)
+      );
+      await sleep(10000);
+    } else {
+      const timer = new Date();
+      const limitHour = new Date();
+      limitHour.setHours(4);
+      if (new Date().getTime() >= limitHour.getTime()) {
+        console.log(`${moment(new Date()).format("HH:MM")}.`);
+        await sleep(360000);
+      }
+      try {
+        const data = await Main.fetchMatches();
+        minutes = data.nextMinute * 60000;
+
+        if (data.matches.length > 0) {
+          matchesFiltered = data.matches.filter(item => item.odds > 0);
+          if (matchesFiltered.length > 0) {
+            console.log(
+              chalk.greenBright(`Found ${matchesFiltered.length} valid matches`)
+            );
+            matchesFiltered.forEach(item => {
               console.log(
-                chalk.greenBright(
-                  `Found ${matchesFiltered.length} valid matches`
-                )
+                `${item.id}: ${item.teamA} ${item.scoreA} x ${item.scoreB} ${
+                  item.teamB
+                } odds: ${chalk.greenBright(item.odds)} ${item.url}`
               );
-              matchesFiltered.forEach(item => {
-                console.log(
-                  `${item.id}: ${item.teamA} ${item.scoreA} x ${item.scoreB} ${
-                    item.teamB
-                  } odds: ${chalk.greenBright(item.odds)} ${item.url}`
-                );
-              });
-              Main.saveMatches(matchesFiltered);
-            } else {
-              console.log(chalk.red(`No valid match founds.`));
-            }
+            });
+
+            Main.saveMatches(matchesFiltered);
           } else {
             console.log(chalk.red(`No valid match founds.`));
           }
-          console.log(
-            chalk.blue(
-              `${moment(new Date()).format("hh:mm:ss")} Running again in ${
-                data.nextMinute
-              } minute${data.nextMinute > 0 ? "s" : ""}`
-            )
-          );
-        } catch (e) {
-          console.log(
-            chalk.red(`Error. Trying again in 1 minute. ${e.message}`)
-          );
-          minutes = 60000;
+        } else {
+          console.log(chalk.red(`No valid match founds.`));
         }
-
-        await sleep(minutes);
+        console.log(
+          chalk.blue(
+            `${moment(new Date()).format("hh:mm:ss")} Running again in ${
+              data.nextMinute
+            } minute${data.nextMinute > 0 ? "s" : ""}`
+          )
+        );
+      } catch (e) {
+        console.log(chalk.red(`Error. Trying again in 1 minute. ${e.message}`));
+        minutes = 60000;
       }
+
+      if (minutes === undefined){
+        console.log("There're no matches. Looking again in 5 min...");
+        minutes = 60000 * 5;
+      }
+      await sleep(minutes);
+      Main.loop();
     }
   };
 
@@ -122,7 +133,7 @@ export default class Main {
     return finalMatches;
   };
 
-  static saveMatches = async (matches: IMatch[]): Promise<IMatch[]> => {
+  static saveMatches = async (matches: IMatch[]): Promise<number> => {
     const matchRepository = getRepository(match);
     const finalMatches: IMatch[] = [];
     const promises = [];
@@ -140,6 +151,7 @@ export default class Main {
           `${filteredMatches.length}/${matches.length} valid matches (odds <= ${MAXIMUM_ODDS})`
         )
       );
+
     filteredMatches.forEach(async item => {
       const foundMatch = await matchRepository.findOne({
         where: { teamA: item.teamA, teamB: item.teamB }
@@ -191,7 +203,12 @@ export default class Main {
     await Promise.all(promises);
 
     await Main.makeBetAllUsers(filteredMatches);
-    return finalMatches;
+
+    if (matches.length > 0 && filteredMatches.length === 0) {
+      return 60000;
+    } else {
+      return 60000;
+    }
   };
 
   static makeBetAllUsers = async (matches: IMatch[]) => {
@@ -211,14 +228,9 @@ export default class Main {
         )
       );
       const promises = [];
-      const LIMIT = 5;
+
       users.forEach(userToBet => {
-        promises.push(
-          makeBetUser(
-            userToBet,
-            matches.slice(0, LIMIT)
-          )
-        );
+        promises.push(makeBetUser(userToBet, matches.slice(0, LIMIT)));
       });
       console.log(chalk.blueBright(`New bets: [success/bets]`));
       await Promise.all(promises);
@@ -235,7 +247,7 @@ const makeBetUser = async (
   const filteredMatches = matches.filter(
     item =>
       !user.bets.some(bet => {
-        return bet.id === item.id;
+        return bet.match.url === item.url;
       })
   );
   console.log(
@@ -252,7 +264,7 @@ const makeBetUser = async (
             password: user.betPassword
           },
           maxOdd: MAXIMUM_ODDS,
-          limitBets: 5,
+          limitBets: LIMIT,
           valueToBet: VALUE_TO_BET,
           ip: "89.185.76.16",
           matches: filteredMatches
