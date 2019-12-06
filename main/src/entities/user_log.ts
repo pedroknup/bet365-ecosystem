@@ -26,4 +26,12 @@ export class user_log {
     @JoinColumn({ name:'idUser'})
     idUser:user | null;
 
+
+    @Column("int",{ 
+        nullable:false,
+        default: () => "'0'",
+        name:"type"
+        })
+    type:number;
+        
 }

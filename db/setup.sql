@@ -641,6 +641,7 @@ CREATE TABLE IF NOT EXISTS `bet365`.`user_log` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
   `text` VARCHAR(150) NOT NULL,
   `idUser` INT(11) NOT NULL,
+  `type` INT(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   INDEX `log-user-id_idx` (`idUser` ASC),
   CONSTRAINT `log-user-id`
@@ -649,7 +650,6 @@ CREATE TABLE IF NOT EXISTS `bet365`.`user_log` (
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB
-AUTO_INCREMENT = 9
 DEFAULT CHARACTER SET = utf8mb4;
 
 

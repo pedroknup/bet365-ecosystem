@@ -10,6 +10,8 @@ import { notEqual } from "assert";
 import { IMatch } from "./match-service";
 import { bet } from "../entities/bet";
 import { CLIENT_RENEG_LIMIT } from "tls";
+import { createUserLog, logLevel } from "./log-service";
+import { user_status } from "../entities/user_status";
 const LIMIT = 9;
 const MAXIMUM_ODDS = 1.05;
 const VALUE_TO_BET = 10;
@@ -69,7 +71,8 @@ export default class Main {
       const timer = new Date();
       const limitHour = new Date();
       limitHour.setHours(4);
-      if (new Date().getTime() >= limitHour.getTime()) {
+      // if (new Date().getTime() >= limitHour.getTime()) {
+      if (timer === new Date()) {
         console.log(`${moment(new Date()).format("HH:MM")}.`);
         await sleep(360000);
       }
@@ -110,9 +113,12 @@ export default class Main {
         minutes = 60000;
       }
 
-      if (minutes === undefined){
+      if (minutes === undefined) {
         console.log("There're no matches. Looking again in 5 min...");
         minutes = 60000 * 5;
+      }
+      if (minutes < 60000 * 3){ minutes = 60000 * 5;
+        console.log(`${minutes/60000} min is too short. Changing to 5 min.`);
       }
       await sleep(minutes);
       Main.loop();
@@ -213,14 +219,15 @@ export default class Main {
 
   static makeBetAllUsers = async (matches: IMatch[]) => {
     const userRepository = getRepository(user);
-    const users = await userRepository.find({
-      relations: ["bets", "bets.match"]
+    const userStatusRepository = getRepository(user_status);
+    const activatedStatus = await userStatusRepository.findOne({
+      where: { name: "activated" }
     });
-    const threeHoursAgo = new Date();
-    const matchesToCheck = [];
+    const users = await userRepository.find({
+      relations: ["bets", "bets.match", "ip"],
+      where: { status: activatedStatus }
+    });
 
-    //check what matches are finished
-    console.log("Checking unfinished matches...  ");
     if (matches.length > 0) {
       console.log(
         chalk.greenBright.bold(
@@ -230,7 +237,9 @@ export default class Main {
       const promises = [];
 
       users.forEach(userToBet => {
-        promises.push(makeBetUser(userToBet, matches.slice(0, LIMIT)));
+        promises.push(
+          makeBetUser(userToBet, matches.slice(0, userToBet.simultaneousBet))
+        );
       });
       console.log(chalk.blueBright(`New bets: [success/bets]`));
       await Promise.all(promises);
@@ -255,18 +264,35 @@ const makeBetUser = async (
       `→ ${user.firstName} ${user.lastName}: ${filteredMatches.length}/${matches.length}`
     )
   );
+  console.log("ip: " + user.ip.ip);
+  if (!user.ip.isValid) {
+    console.log(
+      chalk.red(
+        `User ${user.firstName} ${user.lastName} 'doesn''t have a valid IP`
+      )
+    );
+
+    return;
+  }
   if (user.betUsername && user.betPassword) {
     if (filteredMatches.length > 0) {
       try {
+        createUserLog(
+          user,
+          `Performing bet in ${filteredMatches.length} match${
+            filteredMatches.length > 1 ? "es" : ""
+          }...`,
+          0
+        );
         const response = await axios.post("http://localhost:3002/bet/match", {
           user: {
             username: user.betUsername,
             password: user.betPassword
           },
           maxOdd: MAXIMUM_ODDS,
-          limitBets: LIMIT,
-          valueToBet: VALUE_TO_BET,
-          ip: "89.185.76.16",
+          limitBets: user.simultaneousBet,
+          valueToBet: user.betValue,
+          ip: user.ip.ip,
           matches: filteredMatches
         });
 
@@ -291,6 +317,11 @@ const makeBetUser = async (
             ),
             chalk.white(`R$ ${item.value},00 : ${item.odds}`)
           );
+          createUserLog(
+            user,
+            `→ ${item.teamA} x ${item.teamB}: R$ ${item.value},00. Odds: ${item.odds} ...`,
+            logLevel.success
+          );
           promises.push(betRepository.save(newBet));
         }
 
@@ -310,6 +341,13 @@ const makeBetUser = async (
           `x ${user.firstName} ${user.lastName}: [${0}/${
             filteredMatches.length
           }]`
+        );
+        createUserLog(
+          user,
+          `x Failed on making ${filteredMatches.length} bet${
+            filteredMatches.length > 1 ? "s" : ""
+          }. Error message: ${e.message}`,
+          logLevel.error
         );
       }
     }
