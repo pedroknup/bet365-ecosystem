@@ -123,13 +123,12 @@ const getMatches = async page =>
         const timeInt = parseInt(item.time.slice(0, 2));
         // return timeInt >= 80 && (item.lessThan < 1.1 || item.moreThan <= 1.1);
         const shouldReturn = timeInt >= MINIMUM_TIME;
-
         if (shouldReturn) {
           if (
-            item.teamA.includes("sub") ||
-            item.teamA.includes("women") ||
-            item.teamB.includes("sub") ||
-            item.teamB.includes("women")
+            item.teamA.toLowerCase().includes("sub") ||
+            item.teamA.toLowerCase().includes("women") ||
+            item.teamB.toLowerCase().includes("sub") ||
+            item.teamB.toLowerCase().includes("women")
           )
             shouldReturn = false;
           console.log(
@@ -156,8 +155,6 @@ const getMatches = async page =>
         // const participantCentered = mainMarkersScore.querySelectorAll(
         //   ".gll-ParticipantCentered"
         // );
-
-        let moreThan = 0;
 
         // let lessThan = 0;
 
@@ -212,7 +209,7 @@ const getURL = async page =>
 const getOdds = async page =>
   page.evaluate(async () => {
     let oddsValue = 0;
-
+    let moreThan = 0;
     function sleep(ms) {
       return new Promise(resolve => {
         setTimeout(resolve, ms);
@@ -259,17 +256,29 @@ const getOdds = async page =>
               ).innerHTML
             );
 
+            const moreThanStr = goalsValues.firstElementChild.lastElementChild.querySelector(
+              ".ipe-Participant_OppName"
+            ).innerHTML;
+
+            try {
+              moreThan = parseFloat(moreThanStr);
+            } catch {}
+
+            try {
+              oddsValue = parseFloat(betOdds);
+            } catch {}
+
             console.log("Found odds", oddsValue, goalsTab);
             // alert(`Odds: ${oddsValue}`);
 
             k = children.length;
 
-            return oddsValue;
+            return { odds: oddsValue, moreThan: moreThan };
           }
         }
       }
     }
-    return oddsValue;
+    return undefined;
   });
 
 const setIds = async (page, previousMatches) =>
@@ -415,18 +424,16 @@ const fetchMatches = async () => {
         delay = getRandomDelay();
 
         matches[i].odds = 0;
+        matches[i].moreThan = 0;
 
-        if (odds > 0) {
-          matches[i].odds = odds;
+        if (odds !== undefined && odds != null) {
+          matches[i].odds = odds.odds;
+          matches[i].moreThan = odds.moreThan;
           console.log(
-            chalk.green.dim(`Odds: ${odds}. Going back in ${delay / 1000}s...`)
+            chalk.green.dim(`Odds: ${odds.odds}. More Than ${odds.moreThan}.`)
           );
         } else {
-          console.log(
-            chalk.red.dim(
-              `No valid bet found. Going back in ${delay / 1000}s... `
-            )
-          );
+          console.log(chalk.red.dim(`No valid bet found.`));
         }
       } else {
         console.log(
@@ -502,197 +509,108 @@ router.use("/match", async (req, res) => {
 });
 
 router.post("/check", async (req, res) => {
-  const { matches } = req.body;
-
   const browser = await launchBrowser(false);
-  let finishedMatches = [];
-  let unfinishedMatches = [];
+  try {
+    const { matches } = req.body;
 
-  const checkMatch = async match => {
-    const page = await browser.newPage();
-    await page.emulate(iPhonex);
+    let finishedMatches = [];
+    let unfinishedMatches = [];
 
-    await page.exposeFunction("pushFinishedMatch", match =>
-      finishedMatches.push(match)
-    );
-    await page.exposeFunction("pushUninishedMatch", match =>
-      unfinishedMatches.push(match)
-    );
-    await page.goto(match.url);
-    await page.waitForSelector(".hm-HeaderModule");
+    const checkMatch = async match => {
+      const page = await browser.newPage();
+      await page.emulate(iPhonex);
 
-    await sleep(2000);
-    await page.evaluate(async match => {
-      const finishedLabel = document.querySelector(".ml1-Anims_H2Text");
-      const matchBlock = document.querySelector(".ipo-Fixture_GameDetail");
-      // if (finishedLabel) {
-      //   if (finishedLabel.innerHTML.toLowerCase().includes("eind"));
-      //   await window.pushFinishedMatch(match);
-      // } else {
-      //   if (!!matchBlock) await window.pushFinishedMatch(match);
-      // }
-      if (match.url != window.location.href) {
-        await window.pushFinishedMatch(match);
-      } else {
-        await window.pushUninishedMatch(match);
-      }
-      console.log(window.location.href);
-      console.log(match.url);
-      console.log(finishedLabel);
-      console.log(matchBlock);
-      return true;
-    }, match);
+      await page.exposeFunction("pushFinishedMatch", match =>
+        finishedMatches.push(match)
+      );
+      await page.exposeFunction("pushUninishedMatch", match =>
+        unfinishedMatches.push(match)
+      );
+      await page.goto(match.url);
+      await page.waitForSelector(".hm-HeaderModule");
 
-    // await page.close();
-  };
-  const promises = [];
-  matches.forEach(item => {
-    promises.push(checkMatch(item));
-  });
-  await Promise.all(promises);
+      await sleep(2000);
+      await page.evaluate(async match => {
+        const finishedLabel = document.querySelector(".ml1-Anims_H2Text");
+        const matchBlock = document.querySelector(".ipo-Fixture_GameDetail");
+        // if (finishedLabel) {
+        //   if (finishedLabel.innerHTML.toLowerCase().includes("eind"));
+        //   await window.pushFinishedMatch(match);
+        // } else {
+        //   if (!!matchBlock) await window.pushFinishedMatch(match);
+        // }
+        if (match.url != window.location.href) {
+          await window.pushFinishedMatch(match);
+        } else {
+          await window.pushUninishedMatch(match);
+        }
+        console.log(window.location.href);
+        console.log(match.url);
+        console.log(finishedLabel);
+        console.log(matchBlock);
+        return true;
+      }, match);
 
-  await browser.close();
+      // await page.close();
+    };
+    const promises = [];
+    matches.forEach(item => {
+      promises.push(checkMatch(item));
+    });
+    await Promise.all(promises);
+  } catch {
+    await browser.close();
+  }
   res.send({ finishedMatches, unfinishedMatches });
 });
 
 router.use("/open/:ip", async (req, res) => {
   try {
     const ip = req.params.ip;
+    const ips = req.body.ips;
 
     const browser = await launchBrowser(true);
-    const page = await browser.newPage();
+    try {
+      const page = await browser.newPage();
 
-    await page.emulate(iPhonex);
-    const options = {
-      username: `lum-customer-hl_999dc5f5-zone-static_res-ip-${ip}`,
-      password: "s6z6grmdpdyx"
+      await page.emulate(iPhonex);
+      const options = {
+        username: `lum-customer-hl_999dc5f5-zone-static-ip-${ip}`,
+        password: "juohlhy66kgb"
+        // password: "s6z6grmdpdyx"
+      };
+
+      await page.authenticate(options);
+      await page.goto(`${BASE_URL}${URL_FRAGMENT}`);
+      await page.waitForSelector(".ipo-Fixture");
+    } catch {}
+    const promises = [];
+
+    const loadPageByIp = async ipParameter => {
+      const newPage = await browser.newPage();
+
+      await newPage.emulate(iPhonex);
+      const newOptions = {
+        username: `lum-customer-hl_999dc5f5-zone-static-ip-${ipParameter}`,
+        password: "juohlhy66kgb"
+        // password: "s6z6grmdpdyx"
+      };
+
+      await newPage.authenticate(newOptions);
+      await newPage.goto(`${BASE_URL}${URL_FRAGMENT}`);
+      await newPage.evaluate(ipParameter => {
+        console.log(ipParameter);
+      }, ipParameter);
     };
-
-    await page.authenticate(options);
-    await page.goto(`${BASE_URL}${URL_FRAGMENT}`);
-    await page.waitForSelector(".ipo-Fixture");
-    let successfullyBets = [];
-    await page.exposeFunction("pushSuccessfullyBet", a =>
-      successfullyBets.push(a)
-    );
-
-    // const bug = await page.evaluate(
-    //   async (DELAY_TYPING, DELAY_SLOW, DELAY_BASIC) => {
-    //     function sleep(ms) {
-    //       return new Promise(resolve => {
-    //         setTimeout(resolve, ms);
-    //       });
-    //     }
-
-    //     const getRandomDelay = (slow, typing) => {
-    //       if (typing) {
-    //         let msVariant = Math.floor(Math.random() * 50);
-
-    //         const positiveOrNot = Math.floor(Math.random() * 1);
-
-    //         if (positiveOrNot === 0) {
-    //           msVariant *= -1;
-    //         }
-
-    //         return DELAY_TYPING + msVariant;
-    //       } else {
-    //         let msVariant = Math.floor(Math.random() * 100);
-
-    //         const positiveOrNot = Math.floor(Math.random() * 1);
-
-    //         if (positiveOrNot === 0) {
-    //           msVariant *= -1;
-    //         }
-
-    //         if (slow && !typing) return DELAY_SLOW + msVariant;
-
-    //         return DELAY_BASIC + msVariant;
-    //       }
-    //     };
-
-    //     const typeInput = async (input, word) => {
-    //       for (let i = 0; i < word.length; i++) {
-    //         input.value = `${input.value}${word[i]}`;
-    //         await sleep(getRandomDelay(true, true));
-    //       }
-
-    //       return true;
-    //     };
-
-    //     const loginButton = document.querySelector(
-    //       ".hm-LoggedOutButtons_Login"
-    //     );
-
-    //     await sleep(getRandomDelay());
-    //     loginButton.click();
-
-    //     let found = false;
-    //     for (let attempts = 0; attempts < 12; attempts++) {
-    //       if (!document.querySelector(".lm-StandardLogin_Username")) {
-    //         await sleep(1000);
-    //       } else {
-    //         found = true;
-    //         attempts = 12;
-    //       }
-    //     }
-    //     if (!found) {
-    //       return "input not found. BUG";
-    //     }
-    //     const emailInput = document.querySelector(".lm-StandardLogin_Username");
-    //     const passwordInput = document.querySelector(
-    //       ".lm-StandardLogin_Password"
-    //     );
-
-    //     await sleep(getRandomDelay(true));
-
-    //     emailInput.value = "";
-    //     emailInput.focus();
-    //     await typeInput(emailInput, "peuvictor22");
-    //     await sleep(getRandomDelay());
-
-    //     await sleep(getRandomDelay(true));
-    //     await typeInput(passwordInput, "Camila22");
-    //     await sleep(getRandomDelay(true));
-    //     const okButton = document.querySelector(
-    //       ".lm-StandardLogin_LoginButton"
-    //     );
-    //     okButton.click();
-    //   },
-    //   DELAY_TYPING,
-    //   DELAY_SLOW,
-    //   DELAY_BASIC
-    // );
-    // if (bug) {
-    //   console.log(chalk.red(bug));
-    //   res.status(200).send();
-    //   return;
-    // }
-    // await page.waitForSelector(".hm-LoggedInButtons_MyBetsLabel");
-
-    // const count = await page.evaluate(async () => {
-    //   function sleep(ms) {
-    //     return new Promise(resolve => {
-    //       setTimeout(resolve, ms);
-    //     });
-    //   }
-
-    //   let found = false;
-    //   for (let attempts = 0; attempts < 10; attempts++) {
-    //     const label = document.querySelector(".hm-LoggedInButtons_MyBetsCount");
-    //     if (label) {
-    //       const count = label.innerHTML;
-    //       alert(count);
-    //       return count;
-    //     } else {
-    //       console.log("attempt " + attempts);
-    //       await sleep(1000);
-    //     }
-    //   }
-    //   return 0;
-    // });
-    // console.log(count);
+    if (ips) {
+      ips.forEach(item => {
+        promises.push(loadPageByIp(item));
+      });
+      await Promise.all(promises);
+    }
   } catch (e) {
     console.log(e.message);
+    // await browser.close();
   }
 
   res.status(200).send();
@@ -713,10 +631,14 @@ router.use("/bet/match", async (req, res) => {
 
     // const languageURL = "https://mobile.bet365.com/languages.aspx";
 
-    console.log(`lum-customer-hl_999dc5f5-zone-static_res-ip-${ip}`);
+    // console.log(`lum-customer-hl_999dc5f5-zone-static_res-ip-${ip}`);
+    // const options = {
+    //   username: `lum-customer-hl_999dc5f5-zone-static_res-ip-${ip}`,
+    //   password: "s6z6grmdpdyx"
+    // };
     const options = {
-      username: `lum-customer-hl_999dc5f5-zone-static_res-ip-${ip}`,
-      password: "s6z6grmdpdyx"
+      username: `lum-customer-hl_999dc5f5-zone-static-ip-${ip}`,
+      password: "juohlhy66kgb"
     };
 
     await page.authenticate(options);
@@ -833,7 +755,7 @@ router.use("/bet/match", async (req, res) => {
       }
 
       let found = false;
-      for (let attempts = 0; attempts < 10; attempts++) {
+      for (let attempts = 0; attempts < 5; attempts++) {
         const label = document.querySelector(".hm-LoggedInButtons_MyBetsCount");
         if (label) {
           const count = label.innerHTML;
@@ -864,13 +786,14 @@ router.use("/bet/match", async (req, res) => {
       try {
         const newPage = await browser.newPage();
         await newPage.emulate(iPhonex);
+
         await newPage.authenticate(options);
         await newPage.goto(currentMatch.url);
         await newPage.waitForSelector(".ipe-EventViewMarketTabs");
+
         await newPage.exposeFunction("pushSuccessfullyBet", a =>
           successfullyBets.push(a)
         );
-        await sleep(1000);
 
         const resultStr = await newPage.evaluate(
           async (match, maxOdd, valueToBet) => {
@@ -890,7 +813,11 @@ router.use("/bet/match", async (req, res) => {
                 else if (valueStr[i] == "." || valueStr[i] == ",") index = 9;
                 else index = parseInt(valueStr[i]) - 1;
 
-                document.querySelector(".qb-Keypad").children[index].click();
+                try {
+                  document.querySelector(".qb-Keypad").children[index].click();
+                } catch {
+                  return "Keypad not found!";
+                }
                 await sleep(900);
               }
             };
@@ -946,9 +873,21 @@ router.use("/bet/match", async (req, res) => {
                     const betOdds = goalsValues.lastElementChild.lastElementChild.querySelector(
                       ".ipe-Participant_OppOdds"
                     ).innerHTML;
-                    try {
-                      oddsValue = parseFloat(betOdds);
-                    } catch {}
+                    // const moreThanStr = goalsValues.firstElementChild.lastElementChild.querySelector(
+                    //   ".ipe-Participant_OppName"
+                    // ).innerHTML;
+                    // let moreThan = 0;
+                    // try {
+                    //   moreThan = parseFloat(moreThanStr);
+                    // } catch {}
+
+                    // try {
+                    //   oddsValue = parseFloat(betOdds);
+                    // } catch {}
+
+                    // if (moreThan > 4) {
+                    //   return `More Than invalid ${moreThan}`;
+                    // }
                     console.log("odds:", oddsValue);
                     if (oddsValue <= maxOdd) {
                       if (!goalsValues.lastElementChild.lastElementChild) {
@@ -1036,6 +975,7 @@ router.use("/bet/match", async (req, res) => {
     await browser.close();
     res.send({ successfullyBets, count: count + successfullyBets.length });
   } catch (e) {
+    await browser.close();
     console.log(chalk.redBright(`An error has occurred. ${e.message}`));
     res.send({ successfullyBets: [] });
   }

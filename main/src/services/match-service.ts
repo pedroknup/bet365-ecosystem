@@ -16,6 +16,7 @@ const LIMIT = 9;
 const MAXIMUM_ODDS = 1.05;
 const VALUE_TO_BET = 10;
 const SHOULD_LIMIT_TIME = false;
+const MAXIMUM_MORE_THAN = 4;
 
 export interface IMatch {
   id: number;
@@ -61,27 +62,44 @@ export default class Main {
   static loop = async () => {
     let minutes = 0;
     let matchesFiltered = [];
-
+    let dataLength = 0;
     if (!(await Main.checkSpider())) {
       console.log(
         chalk.red(`Error. Spider service is not running. Trying again in 10s`)
       );
       await sleep(10000);
     } else {
-      const timer = new Date();
-      const limitHour = new Date();
-      limitHour.setHours(4);
+      const setDateTime = function(date, str) {
+        var sp = str.split(":");
+        date.setHours(parseInt(sp[0], 10));
+        date.setMinutes(parseInt(sp[1], 10));
+        date.setSeconds(parseInt(sp[2], 10));
+        return date;
+      };
+
+      const c = new Date().getTime(),
+        start = setDateTime(new Date(), "04:00:00"),
+        end = setDateTime(new Date(), "15:00:00");
+
+      let invalidTime = c > start.getTime() && c < end.getTime();
+      if (invalidTime) console.log("Pausing bot. Running it again at 15:00");
       // if (new Date().getTime() >= limitHour.getTime()) {
-      if (timer === new Date()) {
-        console.log(`${moment(new Date()).format("HH:MM")}.`);
-        await sleep(360000);
+      while (invalidTime) {
+        if (invalidTime) {
+          await sleep(60000);
+        }
+        const d = new Date().getTime();
+        invalidTime = d > start.getTime() && d < end.getTime();
       }
+      console.log(chalk.green("Bot is now on."));
+
       try {
         const data = await Main.fetchMatches();
         minutes = data.nextMinute * 60000;
 
         if (data.matches.length > 0) {
           matchesFiltered = data.matches.filter(item => item.odds > 0);
+          dataLength = matchesFiltered.length;
           if (matchesFiltered.length > 0) {
             console.log(
               chalk.greenBright(`Found ${matchesFiltered.length} valid matches`)
@@ -90,7 +108,9 @@ export default class Main {
               console.log(
                 `${item.id}: ${item.teamA} ${item.scoreA} x ${item.scoreB} ${
                   item.teamB
-                } odds: ${chalk.greenBright(item.odds)} ${item.url}`
+                } odds: ${chalk.greenBright(item.odds)} ${
+                  item.url
+                } more than ${chalk.greenBright(item.moreThan)}`
               );
             });
 
@@ -116,9 +136,15 @@ export default class Main {
       if (minutes === undefined) {
         console.log("There're no matches. Looking again in 5 min...");
         minutes = 60000 * 5;
-      }
-      if (minutes < 60000 * 3){ minutes = 60000 * 5;
-        console.log(`${minutes/60000} min is too short. Changing to 5 min.`);
+      } else if (minutes > 60000 * 10) {
+        console.log(`${minutes / 60000} min is too big. Changing to 5 min.`);
+        minutes = 60000 * 5;
+      } else if (minutes < 60000 * 3 && dataLength > 0) {
+        console.log(
+          `${minutes /
+            60000} min is too short and there is a bet process running. Changing to 3 min.`
+        );
+        minutes = 60000 * 3;
       }
       await sleep(minutes);
       Main.loop();
@@ -144,17 +170,19 @@ export default class Main {
     const finalMatches: IMatch[] = [];
     const promises = [];
 
-    const filteredMatches = matches.filter(item => item.odds <= MAXIMUM_ODDS);
+    const filteredMatches = matches.filter(
+      item => item.odds <= MAXIMUM_ODDS && item.moreThan < MAXIMUM_MORE_THAN
+    );
     if (filteredMatches.length > 0)
       console.log(
         chalk.greenBright(
-          `${filteredMatches.length}/${matches.length} valid matches (odds <= ${MAXIMUM_ODDS})`
+          `${filteredMatches.length}/${matches.length} valid matches (odds <= ${MAXIMUM_ODDS}, more than < ${MAXIMUM_MORE_THAN})`
         )
       );
     else
       console.log(
         chalk.red(
-          `${filteredMatches.length}/${matches.length} valid matches (odds <= ${MAXIMUM_ODDS})`
+          `${filteredMatches.length}/${matches.length} valid matches (odds <= ${MAXIMUM_ODDS}, more than < ${MAXIMUM_MORE_THAN})`
         )
       );
 
