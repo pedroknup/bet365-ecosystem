@@ -126,9 +126,21 @@ const getMatches = async page =>
         if (shouldReturn) {
           if (
             item.teamA.toLowerCase().includes("sub") ||
+            item.teamA.toLowerCase().includes("U18") ||
+            item.teamA.toLowerCase().includes("U19") ||
+            item.teamA.toLowerCase().includes("U20") ||
+            item.teamA.toLowerCase().includes("U21") ||
+            item.teamA.toLowerCase().includes("U22") ||
+            item.teamA.toLowerCase().includes("U23") ||
             item.teamA.toLowerCase().includes("women") ||
             item.teamB.toLowerCase().includes("sub") ||
-            item.teamB.toLowerCase().includes("women")
+            item.teamB.toLowerCase().includes("women") ||
+            item.teamB.toLowerCase().includes("U18") ||
+            item.teamB.toLowerCase().includes("U19") ||
+            item.teamB.toLowerCase().includes("U20") ||
+            item.teamB.toLowerCase().includes("U21") ||
+            item.teamB.toLowerCase().includes("U22") ||
+            item.teamB.toLowerCase().includes("U23")
           )
             shouldReturn = false;
           console.log(
@@ -784,18 +796,10 @@ router.use("/bet/match", async (req, res) => {
         );
       } catch {}
       try {
-        const newPage = await browser.newPage();
-        await newPage.emulate(iPhonex);
+        await page.goto(currentMatch.url);
+        await page.waitForSelector(".ipe-EventViewMarketTabs");
 
-        await newPage.authenticate(options);
-        await newPage.goto(currentMatch.url);
-        await newPage.waitForSelector(".ipe-EventViewMarketTabs");
-
-        await newPage.exposeFunction("pushSuccessfullyBet", a =>
-          successfullyBets.push(a)
-        );
-
-        const resultStr = await newPage.evaluate(
+        const resultStr = await page.evaluate(
           async (match, maxOdd, valueToBet) => {
             let oddsValue = 0;
 
