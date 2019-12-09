@@ -2,7 +2,7 @@ import {BaseEntity,Column,Entity,Index,JoinColumn,JoinTable,ManyToMany,ManyToOne
 import {user} from "./user";
 
 
-@Entity("forgot_password" ,{schema:"pk-boilerplate" } )
+@Entity("forgot_password" ,{schema:"bet365" } )
 @Index("forgot-user-id_idx",["user",])
 export class forgot_password {
 

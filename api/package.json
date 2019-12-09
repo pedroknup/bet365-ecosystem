@@ -30,7 +30,7 @@
     "tsc": "tsc",
     "start": "set debug=* && ts-node-dev --respawn --transpileOnly ./src/index.ts",
     "prod": "tsc && node ./build/app.js",
-    "generate-models": "npx typeorm-model-generator -h localhost -d pk-boilerplate -p 3307 -u root -x 123123 -e mysql -o src && ts-node ./scripts/post-generated-models.ts",
+    "generate-models": "npx typeorm-model-generator -h localhost -d bet365 -p 3307 -u root -x 123123 -e mysql -o src && ts-node ./scripts/post-generated-models.ts",
     "migration:run": "ts-node ./node_modules/typeorm/cli.js migration:run"
   }
 }

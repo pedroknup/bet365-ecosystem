@@ -2,8 +2,8 @@ import {BaseEntity,Column,Entity,Index,JoinColumn,JoinTable,ManyToMany,ManyToOne
 import {user} from "./user";
 
 
-@Entity("role" ,{schema:"bet365" } )
-export class role {
+@Entity("ValidIp" ,{schema:"bet365" } )
+export class ValidIp {
 
     @PrimaryGeneratedColumn({
         type:"int", 
@@ -14,14 +14,22 @@ export class role {
 
     @Column("varchar",{ 
         nullable:false,
-        length:45,
-        name:"name"
+        length:20,
+        name:"ip"
         })
-    name:string;
+    ip:string;
+        
+
+    @Column("tinyint",{ 
+        nullable:false,
+        default: () => "'1'",
+        name:"isValid"
+        })
+    isValid:number;
         
 
    
-    @OneToMany(()=>user, (user: user)=>user.role,{ onDelete: 'NO ACTION' ,onUpdate: 'NO ACTION' })
+    @OneToMany(()=>user, (user: user)=>user.ip,{ onDelete: 'NO ACTION' ,onUpdate: 'NO ACTION' })
     users:user[];
     
 }

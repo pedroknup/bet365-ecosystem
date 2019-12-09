@@ -16,7 +16,7 @@ const LIMIT = 9;
 const MAXIMUM_ODDS = 1.05;
 const VALUE_TO_BET = 10;
 const SHOULD_LIMIT_TIME = false;
-const MAXIMUM_MORE_THAN = 4;
+const MAXIMUM_MORE_THAN = 3;
 
 export interface IMatch {
   id: number;
@@ -68,6 +68,8 @@ export default class Main {
         chalk.red(`Error. Spider service is not running. Trying again in 10s`)
       );
       await sleep(10000);
+      await Main.loop();
+      return;
     } else {
       const setDateTime = function(date, str) {
         var sp = str.split(":");
@@ -87,11 +89,11 @@ export default class Main {
       while (invalidTime) {
         if (invalidTime) {
           await sleep(60000);
+          console.log(chalk.green("Bot is now on."));
         }
         const d = new Date().getTime();
         invalidTime = d > start.getTime() && d < end.getTime();
       }
-      console.log(chalk.green("Bot is now on."));
 
       try {
         const data = await Main.fetchMatches();

@@ -5,7 +5,7 @@
   "port": 3307,
   "username": "root",
   "password": "123123",
-  "database": "pk-boilerplate",
+  "database": "bet365",
   "synchronize": false,
   "entities": ["src/entities/*.ts"],
   "migrations": ["src/migration/**/*.ts"],

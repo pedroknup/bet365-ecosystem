@@ -4,7 +4,7 @@ export interface Session {
   deviceId: string;
 }
 
-export interface SessionState {
+export interface ISessionState {
   token: string;
   deviceId: string;
   isLoading: boolean;

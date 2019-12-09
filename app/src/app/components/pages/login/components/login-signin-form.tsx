@@ -38,12 +38,14 @@ const useStyles = makeStyles({
 
 interface ILoginFormProps {
   isLoading?: boolean;
-  onLogin?: () => void;
+  onLogin?: (email: string, password: string) => void;
   onSignUpClick: () => void;
   onForgotClick: () => void;
 }
 export const LoginSignInForm = (props: ILoginFormProps) => {
   const classes = useStyles();
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
   return (
     <div className="login-content">
       <Typography className={classes.title} variant="h5" component="h2">
@@ -53,19 +55,33 @@ export const LoginSignInForm = (props: ILoginFormProps) => {
       <TextField
         className={classes.textField}
         id="outlined-basic"
+        onChange={(e) => {
+          setEmail(e.currentTarget.value);
+        }}
         label="E-mail"
+        value={email}
         variant="outlined"
       />
       <TextField
+        onChange={(e) => {
+          setPassword(e.currentTarget.value);
+        }}
         className={classes.textField}
         id="outlined-basic"
         label="Password"
         type="password"
+        value={password}
         variant="outlined"
       />
-      <Button onClick={()=>{
-        props.onLogin && props.onLogin()
-      }} disabled={props.isLoading} className="button" variant="contained" color="primary">
+      <Button
+        onClick={() => {
+          props.onLogin && props.onLogin(email, password);
+        }}
+        disabled={props.isLoading}
+        className="button"
+        variant="contained"
+        color="primary"
+      >
         Sign In
       </Button>
       <div className="actions">

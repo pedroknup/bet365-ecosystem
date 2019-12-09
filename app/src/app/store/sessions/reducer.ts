@@ -1,9 +1,9 @@
 import * as sessions from './actions';
 import { ActionType, getType } from 'typesafe-actions';
-import { SessionState } from './types';
+import { ISessionState } from './types';
 import { loginMiddleware } from './middleware';
 
-const defaultState: SessionState = {
+const defaultState: ISessionState = {
   token: '',
   isLoading: false,
   errorMsg: '',
@@ -12,7 +12,7 @@ const defaultState: SessionState = {
   IGToken: ''
 };
 
-export default (state = defaultState, action: ActionType<typeof sessions>): SessionState => {
+export const sessionReducer = (state = defaultState, action: ActionType<typeof sessions>): ISessionState => {
   let toSave;
   switch (action.type) {
     case getType(sessions.logoutSession.request):

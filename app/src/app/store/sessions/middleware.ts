@@ -1,11 +1,11 @@
 
 import * as sessions from './actions';
-import { Session, SessionState } from './types';
+import { Session, ISessionState } from './types';
 import { ActionType, getType } from 'typesafe-actions';
 import { Middleware } from 'redux';
 // import { userPK } from '../../dummy-data/users';
 
-export const loginMiddleware: Middleware<{}, SessionState> = ({ getState }) => (next) => async (
+export const loginMiddleware: Middleware<{}, ISessionState> = ({ getState }) => (next) => async (
   action: ActionType<typeof sessions>,
 ) => {
   next(action);

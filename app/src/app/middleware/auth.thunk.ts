@@ -1,10 +1,6 @@
 import { AuthApi, LoginBody } from '../../api/api';
 
-const loginbody: LoginBody = {
-  email: 'admin@admin.com',
-  password: '123123'
-};
-export const authThunk = async () => {
+export const authThunk = async (loginbody: LoginBody) => {
   const api = new AuthApi();
   api
     .authLoginPost(loginbody)

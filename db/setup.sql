@@ -422,22 +422,22 @@ SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 
 
-INSERT INTO `bet365`.`role` (`name`) VALUES ('user');
-INSERT INTO `bet365`.`role` (`name`) VALUES ('admin');
+-- INSERT INTO `bet365`.`role` (`name`) VALUES ('user');
+-- INSERT INTO `bet365`.`role` (`name`) VALUES ('admin');
 
-INSERT INTO `bet365`.`user_status` (`id`, `name`) VALUES (NULL, 'activated');
-INSERT INTO `bet365`.`user_status` (`id`, `name`) VALUES (NULL, 'pendent');
-INSERT INTO `bet365`.`user_status` (`id`, `name`) VALUES (NULL, 'deactivated');
-INSERT INTO `bet365`.`user_status` (`id`, `name`) VALUES (NULL, 'banned');
-
-
+-- INSERT INTO `bet365`.`user_status` (`id`, `name`) VALUES (NULL, 'activated');
+-- INSERT INTO `bet365`.`user_status` (`id`, `name`) VALUES (NULL, 'pendent');
+-- INSERT INTO `bet365`.`user_status` (`id`, `name`) VALUES (NULL, 'deactivated');
+-- INSERT INTO `bet365`.`user_status` (`id`, `name`) VALUES (NULL, 'banned');
 
 
-INSERT INTO `bet365`.`login_provider` (`id`, `name`, `appId`) VALUES (NULL, 'facebook', '418130689072157');
-INSERT INTO `bet365`.`login_provider` (`id`, `name`, `appId`) VALUES (NULL, 'linkedin', '');
-INSERT INTO `bet365`.`login_provider` (`id`, `name`, `appId`) VALUES (NULL, 'google', '923738134391-1fvtviaiprlche13vepf2cdb7ht6hagq.apps.googleusercontent.com');
 
-INSERT INTO `bet365`.`user` (`id`, `firstName`, `lastName`, `email`, `password`, `createdAt`, `statusId`, `roleId`) VALUES ('1', 'Admin', 'Admin', 'admin@admin.com', '$2a$08$qFvXV8hTfEdaI3smfJRqse21bxmxWXM1u/cBBhziLXSRSejfJKMKW', '2019-11-28 19:50:40', '1', '2');
+
+-- INSERT INTO `bet365`.`login_provider` (`id`, `name`, `appId`) VALUES (NULL, 'facebook', '418130689072157');
+-- INSERT INTO `bet365`.`login_provider` (`id`, `name`, `appId`) VALUES (NULL, 'linkedin', '');
+-- INSERT INTO `bet365`.`login_provider` (`id`, `name`, `appId`) VALUES (NULL, 'google', '923738134391-1fvtviaiprlche13vepf2cdb7ht6hagq.apps.googleusercontent.com');
+
+-- INSERT INTO `bet365`.`user` (`id`, `firstName`, `lastName`, `email`, `password`, `createdAt`, `statusId`, `roleId`) VALUES ('1', 'Admin', 'Admin', 'admin@admin.com', '$2a$08$qFvXV8hTfEdaI3smfJRqse21bxmxWXM1u/cBBhziLXSRSejfJKMKW', '2019-11-28 19:50:40', '1', '2');
 -- MySQL Workbench Forward Engineering
 
 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
@@ -658,22 +658,22 @@ SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 
 
-INSERT INTO `bet365`.`role` (`name`) VALUES ('user');
-INSERT INTO `bet365`.`role` (`name`) VALUES ('admin');
+-- INSERT INTO `bet365`.`role` (`name`) VALUES ('user');
+-- INSERT INTO `bet365`.`role` (`name`) VALUES ('admin');
 
-INSERT INTO `bet365`.`user_status` (`id`, `name`) VALUES ('1', 'activated');
-INSERT INTO `bet365`.`user_status` (`id`, `name`) VALUES ('2' , 'pendent');
-INSERT INTO `bet365`.`user_status` (`id`, `name`) VALUES ('3', 'deactivated');
-INSERT INTO `bet365`.`user_status` (`id`, `name`) VALUES ('4', 'banned');
-
-
+-- INSERT INTO `bet365`.`user_status` (`id`, `name`) VALUES ('1', 'activated');
+-- INSERT INTO `bet365`.`user_status` (`id`, `name`) VALUES ('2' , 'pendent');
+-- INSERT INTO `bet365`.`user_status` (`id`, `name`) VALUES ('3', 'deactivated');
+-- INSERT INTO `bet365`.`user_status` (`id`, `name`) VALUES ('4', 'banned');
 
 
-INSERT INTO `bet365`.`login_provider` (`id`, `name`, `appId`) VALUES (NULL, 'facebook', '418130689072157');
-INSERT INTO `bet365`.`login_provider` (`id`, `name`, `appId`) VALUES (NULL, 'linkedin', '');
-INSERT INTO `bet365`.`login_provider` (`id`, `name`, `appId`) VALUES (NULL, 'google', '923738134391-1fvtviaiprlche13vepf2cdb7ht6hagq.apps.googleusercontent.com');
 
-INSERT INTO `bet365`.`country` (`id`, `name`, `abr`) VALUES ('1', 'brazil', 'br');
 
-INSERT INTO `bet365`.`user` (`id`, `firstName`, `lastName`, `email`, `password`, `createdAt`, `statusId`, `roleId`, `countryId`) VALUES ('1', 'Admin', 'Admin', 'admin@admin.com', '$2a$08$qFvXV8hTfEdaI3smfJRqse21bxmxWXM1u/cBBhziLXSRSejfJKMKW', '2019-11-28 19:50:40', '1', '2', '1');
+-- INSERT INTO `bet365`.`login_provider` (`id`, `name`, `appId`) VALUES (NULL, 'facebook', '418130689072157');
+-- INSERT INTO `bet365`.`login_provider` (`id`, `name`, `appId`) VALUES (NULL, 'linkedin', '');
+-- INSERT INTO `bet365`.`login_provider` (`id`, `name`, `appId`) VALUES (NULL, 'google', '923738134391-1fvtviaiprlche13vepf2cdb7ht6hagq.apps.googleusercontent.com');
+
+-- INSERT INTO `bet365`.`country` (`id`, `name`, `abr`) VALUES ('1', 'brazil', 'br');
+
+-- INSERT INTO `bet365`.`user` (`id`, `firstName`, `lastName`, `email`, `password`, `createdAt`, `statusId`, `roleId`, `countryId`) VALUES ('1', 'Admin', 'Admin', 'admin@admin.com', '$2a$08$qFvXV8hTfEdaI3smfJRqse21bxmxWXM1u/cBBhziLXSRSejfJKMKW', '2019-11-28 19:50:40', '1', '2', '1');
 

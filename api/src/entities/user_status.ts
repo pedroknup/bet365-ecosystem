@@ -2,7 +2,7 @@ import {BaseEntity,Column,Entity,Index,JoinColumn,JoinTable,ManyToMany,ManyToOne
 import {user} from "./user";
 
 
-@Entity("user_status" ,{schema:"pk-boilerplate" } )
+@Entity("user_status" ,{schema:"bet365" } )
 export class user_status {
 
     @PrimaryGeneratedColumn({

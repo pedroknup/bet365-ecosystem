@@ -3,7 +3,7 @@ import {user} from "./user";
 import {login_provider} from "./login_provider";
 
 
-@Entity("user_external_login" ,{schema:"pk-boilerplate" } )
+@Entity("user_external_login" ,{schema:"bet365" } )
 @Index("user-external-login-id_idx",["user",])
 @Index("login-provider-id_idx",["loginProvider",])
 export class user_external_login {

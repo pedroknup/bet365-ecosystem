@@ -20,7 +20,7 @@ createConnection()
           title: "PK-Boilerplate",
           version: "1.0.0"
         },
-        host: "localhost:3001",
+        host: "localhost:3030",
         basePath: "",
         produces: ["application/json", "application/xml"],
         schemes: ["http"],
@@ -46,8 +46,8 @@ createConnection()
     //Set all routes from routes folder
     app.use("/", routes);
 
-    app.listen(3001, () => {
-      console.log("Server started on port 3001!");
+    app.listen(3030, () => {
+      console.log("API started on port 3030!");
     });
   })
   .catch(error => console.log(error));

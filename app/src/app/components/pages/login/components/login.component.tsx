@@ -13,6 +13,7 @@ import { LoginSignInForm } from './login-signin-form';
 import { LoginSignUpForm } from './login-signup-form';
 import { LoginForgotPassword } from './login-forgot-password';
 import { authThunk } from 'app/middleware/auth.thunk';
+import { LoginContainerProps } from '../containers/login.container';
 
 export interface ILoginComponentProps {}
 
@@ -64,11 +65,11 @@ export const LoginComponent = (
           {currentLoginState === loginState.signin ? (
             <LoginSignInForm
               isLoading={isLoading}
-              onLogin={() => {
+              onLogin={(email, password) => {
                 setIsLoading(true);
-                authThunk();
+                authThunk({ email, password });
                 setTimeout(() => {
-                   setIsLoading(false);
+                  setIsLoading(false);
                 }, 1000);
               }}
               onForgotClick={() => {

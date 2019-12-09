@@ -2,7 +2,7 @@ import {BaseEntity,Column,Entity,Index,JoinColumn,JoinTable,ManyToMany,ManyToOne
 import {user_external_login} from "./user_external_login";
 
 
-@Entity("login_provider" ,{schema:"pk-boilerplate" } )
+@Entity("login_provider" ,{schema:"bet365" } )
 export class login_provider {
 
     @PrimaryGeneratedColumn({

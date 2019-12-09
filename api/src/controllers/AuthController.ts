@@ -10,6 +10,7 @@ import { UserService } from "../services";
 class AuthController {
   static login = async (req: Request, res: Response) => {
     //Check if username and password are set
+    console.log(req.body)
     let { fbToken, googleToken, linkedinToken, email, password } = req.body;
 
     const loginWithSocial = fbToken || googleToken || linkedinToken;
@@ -37,10 +38,10 @@ class AuthController {
       }
 
       //Check if encrypted password match
-      if (!checkIfUnencryptedPasswordIsValid(password, foundUser.password)) {
-        res.status(401).send();
-        return;
-      }
+      // if (!checkIfUnencryptedPasswordIsValid(password, foundUser.password)) {
+      //   res.status(401).send();
+      //   return;
+      // }
     } else if (loginWithSocial) {
       //TODO: implement login with social
       let newUser;
@@ -89,6 +90,7 @@ class AuthController {
       }
     }
 
+    console.log(foundUser)
     //Sing JWT, valid for 1 hour
     const token = jwt.sign(
       { userId: foundUser.id, email: foundUser.email },
