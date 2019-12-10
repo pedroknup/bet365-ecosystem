@@ -1,4 +1,5 @@
-import { Store, createStore, applyMiddleware } from 'redux';
+import { Store, createStore, applyMiddleware, Middleware } from 'redux';
+import * as sessionsActions from '../actions';
 import createSagaMiddleware from 'redux-saga';
 // `react-router-redux` is deprecated, so we use `connected-react-router`.
 // This provides a Redux middleware which connects to our `react-router` instance.
@@ -10,24 +11,26 @@ import { composeWithDevTools } from 'redux-devtools-extension';
 import { History } from 'history';
 
 // Import the state interface and our combined reducers/sagas.
-import { RootState, rootReducer } from './';
+import { IApplicationState, rootReducer } from './';
+import { logger } from '../middleware/logger';
+import { loginMiddleware } from './sessions/middleware';
+
 
 export default function configureStore(
   history: History,
-  initialState: RootState
-): Store<RootState> {
+  initialState: IApplicationState
+): Store<IApplicationState> {
   // create the composing function for our middlewares
   const composeEnhancers = composeWithDevTools({});
   // create the redux-saga middleware
   const sagaMiddleware = createSagaMiddleware();
 
+const middlewares: Middleware[] = [logger];
+
+  // applyMiddleware(...(middlewares as Middleware[]));
   // We'll create our store with the combined reducers/sagas, and the initial Redux state that
   // we'll be passing from our entry point.
-  const store = createStore(
-    connectRouter(history)(rootReducer),
-    initialState,
-    composeEnhancers(applyMiddleware(routerMiddleware(history), sagaMiddleware))
-  );
+  const store = createStore(rootReducer, initialState, composeEnhancers(applyMiddleware(routerMiddleware(history), loginMiddleware)));
 
   return store;
 }

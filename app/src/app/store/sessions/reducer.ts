@@ -6,6 +6,7 @@ import { Reducer } from 'redux';
 const defaultState: ISessionState = {
   token: '',
   isLoading: false,
+  user: undefined,
   errorMsg: '',
   FBToken: '',
   IGToken: '',
@@ -24,17 +25,29 @@ const reducer: Reducer<ISessionState> = (state = defaultState, action) => {
     case getType(sessions.loginIGSession.failure):
       toSave = { ...state, isLoading: false, user: undefined, token: '', errorMsg: action.payload };
       return { ...toSave };
+    case getType(sessions.loginSession.failure):
+      toSave = { ...state, isLoading: false, user: undefined, token: '', errorMsg: action.payload };
+      return { ...toSave };
 
     case getType(sessions.loginFBSession.request):
       return { ...state, isLoading: true, errorMsg: '' };
 
-    case getType(sessions.loginFBSession.success):
+    case getType(sessions.loginSession.request):
+      return {
+        ...state,
+        email: action.payload.email,
+        password: action.payload.password,
+        isLoading: true,
+        errorMsg: ''
+      };
+
+    case getType(sessions.loginSession.success):
       toSave = {
         ...state,
         email: '',
         password: '',
         token: action.payload.token,
-        deviceId: action.payload.deviceId,
+        user: action.payload.user,
         errorMsg: '',
         isLoading: false
       };

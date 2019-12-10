@@ -15,7 +15,7 @@ import { LoginForgotPassword } from './login-forgot-password';
 import { authThunk } from 'app/middleware/auth.thunk';
 import { LoginContainerProps } from '../containers/login.container';
 
-export interface ILoginComponentProps {}
+export interface ILoginComponentProps extends LoginContainerProps {}
 
 const useStyles = makeStyles({
   card: {
@@ -53,24 +53,27 @@ enum loginState {
 }
 export const LoginComponent = (
   // props: ILoginComponentProps & RouteComponentProps & LoginContainerProps
-  props: ILoginComponentProps & RouteComponentProps
+  props: ILoginComponentProps
 ) => {
   const [currentLoginState, setCurrentLoginState] = React.useState(loginState.signin);
-  const [isLoading, setIsLoading] = React.useState(false);
+  const { isLoading, password, email, token, errorMsg, history } = props;
+  React.useEffect(() => {
+    if (token) {
+      history.push('/');
+    }
+  });
   const classes = useStyles();
   return (
     <div className="container">
       <Card className={classes.card}>
         <CardContent className={classes.content}>
+          <span>{token}</span>
           {currentLoginState === loginState.signin ? (
             <LoginSignInForm
+              errorMsg={errorMsg}
               isLoading={isLoading}
               onLogin={(email, password) => {
-                setIsLoading(true);
-                authThunk({ email, password });
-                setTimeout(() => {
-                  setIsLoading(false);
-                }, 1000);
+                props.login({ email, password });
               }}
               onForgotClick={() => {
                 setCurrentLoginState(loginState.forgot);

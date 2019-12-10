@@ -5,7 +5,7 @@ import { connect, MapStateToProps, MapDispatchToProps } from 'react-redux';
 import * as sessionActions from '../../../../store/sessions/actions';
 import { ILoginPayload } from '../../../../store/sessions/types';
 
-import { ILoginComponentProps, LoginComponent } from '../components';
+import { IHomeComponentProps, HomeComponent } from '../components';
 import { RouteComponentProps } from 'react-router';
 import { IApplicationState } from 'app/store';
 import { Dispatch, Action, AnyAction } from 'redux';
@@ -21,7 +21,7 @@ interface IDispatchProps {
   login: (payload: ILoginPayload) => void;
 }
 
-const mapStateToProps: MapStateToProps<IStateProps, ILoginComponentProps, IApplicationState> = ({
+const mapStateToProps: MapStateToProps<IStateProps, IHomeComponentProps, IApplicationState> = ({
   session
 }) => ({
   isLoading: session.isLoading,
@@ -36,7 +36,7 @@ const mapStateToProps: MapStateToProps<IStateProps, ILoginComponentProps, IAppli
 //   data: heroes.data
 // });
 
-const mapDispatchToProps: MapDispatchToProps<IDispatchProps, ILoginComponentProps> = (
+const mapDispatchToProps: MapDispatchToProps<IDispatchProps, IHomeComponentProps> = (
   dispatch
 ) => ({
   login: (payload) => {
@@ -44,14 +44,14 @@ const mapDispatchToProps: MapDispatchToProps<IDispatchProps, ILoginComponentProp
     return dispatch(sessionActions.loginAction(payload))}
 });
 
-// export interface LoginContainerPropsProps=  IDispatchProps & IStateProps;
+// export interface HomeContainerPropsProps=  IDispatchProps & IStateProps;
 
-export type LoginContainerProps = IStateProps & IDispatchProps & RouteComponentProps;
+export type HomeContainerProps = IStateProps & IDispatchProps & RouteComponentProps;
 // const mapDispatchToProps = (dispatch: Dispatch<IDispatchProps>) => ({
 //   login: (payload: ILoginPayload) => dispatch(sessionActions.loginAction(payload))
 // });
 
-export const LoginContainer = connect(
+export const HomeContainer = connect(
   mapStateToProps,
   mapDispatchToProps
-)(LoginComponent);
+)(HomeComponent);

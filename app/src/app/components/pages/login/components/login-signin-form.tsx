@@ -41,11 +41,13 @@ interface ILoginFormProps {
   onLogin?: (email: string, password: string) => void;
   onSignUpClick: () => void;
   onForgotClick: () => void;
+  errorMsg?: string;
 }
 export const LoginSignInForm = (props: ILoginFormProps) => {
   const classes = useStyles();
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
+  const { errorMsg } = props;
   return (
     <div className="login-content">
       <Typography className={classes.title} variant="h5" component="h2">
@@ -73,6 +75,7 @@ export const LoginSignInForm = (props: ILoginFormProps) => {
         value={password}
         variant="outlined"
       />
+      {errorMsg && <span style={{ color: 'red', margin: "8px 0", textAlign: 'left' }}>{errorMsg}</span>}
       <Button
         onClick={() => {
           props.onLogin && props.onLogin(email, password);

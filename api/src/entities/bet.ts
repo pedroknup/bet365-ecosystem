@@ -52,4 +52,11 @@ export class bet {
         })
     odds:number | null;
         
+
+    @Column("tinyint",{ 
+        nullable:true,
+        name:"win"
+        })
+    win:number | null;
+        
 }

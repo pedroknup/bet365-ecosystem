@@ -10,7 +10,7 @@ import { UserService } from "../services";
 class AuthController {
   static login = async (req: Request, res: Response) => {
     //Check if username and password are set
-    console.log(req.body)
+    console.log(req.body);
     let { fbToken, googleToken, linkedinToken, email, password } = req.body;
 
     const loginWithSocial = fbToken || googleToken || linkedinToken;
@@ -21,9 +21,11 @@ class AuthController {
       (loginWithEmail && loginWithSocial)
     ) {
       res.status(400).json({ error: "Bad request" }); //TODO: locale support
+      return;
     }
     if (loginWithEmail && !email) {
       res.status(400).json({ error: "Email is empty" });
+      return;
     }
 
     //Get user from database
@@ -34,7 +36,7 @@ class AuthController {
       try {
         foundUser = await UserService.getUserByEmail(email);
       } catch (error) {
-        res.status(401).send();
+        res.status(401).send({ error: "User not found" });
       }
 
       //Check if encrypted password match
@@ -73,11 +75,11 @@ class AuthController {
       }
       if (newUser) {
         //Add new user
-        // TODO: Get user name through social login 
+        // TODO: Get user name through social login
         newUser = new user();
         newUser.email = email;
-       // newUser.firstName = firstName;
-       // newUser.lastName = lastName;
+        // newUser.firstName = firstName;
+        // newUser.lastName = lastName;
         newUser.password = password;
 
         //Validade if the parameters are ok
@@ -90,7 +92,7 @@ class AuthController {
       }
     }
 
-    console.log(foundUser)
+    console.log(foundUser);
     //Sing JWT, valid for 1 hour
     const token = jwt.sign(
       { userId: foundUser.id, email: foundUser.email },
