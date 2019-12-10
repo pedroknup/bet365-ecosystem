@@ -6,14 +6,14 @@ export interface Session {
 
 export interface ISessionState {
   token: string;
-  deviceId: string;
   isLoading: boolean;
   errorMsg: string;
   instagramId?: string;
   facebookId?: string;
   FBToken?: string;
   IGToken?: string;
-  passwordSession?: string;
+  email?: string;
+  password?: string;
 }
 
 export interface SessionGroup {

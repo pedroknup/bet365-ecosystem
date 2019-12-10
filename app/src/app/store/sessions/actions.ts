@@ -19,6 +19,14 @@ export const logoutSession = createAsyncAction(
   'sessions/LOGOUT_FAILURE',
 )<void, Session, string>();
 
+export const loginSession = createAsyncAction(
+  'sessions/LOGIN_REQUEST',
+  'sessions/LOGIN_SUCCESS',
+  'sessions/LOGIN_FAILURE'
+)<void, Session, string>();
+
+
+export const loginAction = createAction('sessions/LOGIN_REQUEST', (resolve) => () => resolve());
 export const loginFBAction = createAction('sessions/FETCH_FB_REQUEST', (resolve) => () => resolve());
 export const loginIGAction = createAction('sessions/FETCH_IG_REQUEST', (resolve) => () => resolve());
 export const logoutAction = createAction('sessions/LOGOUT_REQUEST', (resolve) => () => resolve());

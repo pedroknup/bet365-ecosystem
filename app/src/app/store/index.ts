@@ -1,20 +1,18 @@
-import { StateType } from 'typesafe-actions';
-import { Middleware } from 'redux';
+import { combineReducers, Dispatch, Reducer, Action, AnyAction } from 'redux';
+import { ISessionState } from './sessions/types';
+import { sessionReducer } from './sessions/reducer';
 
-import rootReducer from './root-reducer';
+// The top-level state object.
+//
+// `connected-react-router` already injects the router state typings for us,
+// so we can ignore them here.
+export interface IApplicationState {
+  session: ISessionState;
+}
 
-import * as sessionsActions from './sessions/actions';
-import { loginMiddleware } from './sessions/middleware';
-
-export { default } from './store';
-export { default as rootReducer } from './root-reducer';
-
-export const selectors = {};
-
-export const actions = {
-  sessions: sessionsActions
-};
-
-export const middlewares: Middleware[] = [loginMiddleware];
-
-export type RootState = StateType<typeof rootReducer>;
+// Whenever an action is dispatched, Redux will update each top-level application state property
+// using the reducer with the matching name. It's important that the names match exactly, and that
+// the reducer acts on the corresponding IApplicationState property type.
+export const rootReducer = combineReducers<IApplicationState>({
+  session: sessionReducer
+});

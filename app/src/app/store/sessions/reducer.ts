@@ -1,42 +1,28 @@
 import * as sessions from './actions';
 import { ActionType, getType } from 'typesafe-actions';
 import { ISessionState } from './types';
-import { loginMiddleware } from './middleware';
+import { Reducer } from 'redux';
 
 const defaultState: ISessionState = {
   token: '',
   isLoading: false,
   errorMsg: '',
-  deviceId: '',
   FBToken: '',
-  IGToken: ''
+  IGToken: '',
+  email: '',
+  password: ''
 };
 
-export const sessionReducer = (state = defaultState, action: ActionType<typeof sessions>): ISessionState => {
+const reducer: Reducer<ISessionState> = (state = defaultState, action) => {
   let toSave;
   switch (action.type) {
     case getType(sessions.logoutSession.request):
       return { ...state, token: '' };
-
     case getType(sessions.loginFBSession.failure):
-      toSave = {
-        ...state,
-        isLoading: false,
-        user: undefined,
-        token: '',
-        errorMsg: action.payload
-      };
-      // localStorage.setItem('data', JSON.stringify(toSave));
+      toSave = { ...state, isLoading: false, user: undefined, token: '', errorMsg: action.payload };
       return { ...toSave };
     case getType(sessions.loginIGSession.failure):
-      toSave = {
-        ...state,
-        isLoading: false,
-        user: undefined,
-        token: '',
-        errorMsg: action.payload
-      };
-      // localStorage.setItem('data', JSON.stringify(toSave));
+      toSave = { ...state, isLoading: false, user: undefined, token: '', errorMsg: action.payload };
       return { ...toSave };
 
     case getType(sessions.loginFBSession.request):
@@ -45,18 +31,18 @@ export const sessionReducer = (state = defaultState, action: ActionType<typeof s
     case getType(sessions.loginFBSession.success):
       toSave = {
         ...state,
-        // phoneSession: '',
-        // passwordSession: '',
+        email: '',
+        password: '',
         token: action.payload.token,
         deviceId: action.payload.deviceId,
         errorMsg: '',
         isLoading: false
       };
-      //   localStorage.setItem('data', JSON.stringify(toSave));
-      //  alert('saved');
       return { ...toSave };
 
     default:
       return state;
   }
 };
+
+export { reducer as sessionReducer };
