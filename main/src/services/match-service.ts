@@ -5,18 +5,21 @@ const chalk = require("chalk");
 import config from "../config/config";
 import { getRepository, MoreThan } from "typeorm";
 import { match } from "../entities/match";
-import { user } from "../entities/user";
+
 import { notEqual } from "assert";
 import { IMatch } from "./match-service";
 import { bet } from "../entities/bet";
 import { CLIENT_RENEG_LIMIT } from "tls";
 import { createUserLog, logLevel } from "./log-service";
 import { user_status } from "../entities/user_status";
+import { user } from "../entities/user";
 const LIMIT = 9;
 const MAXIMUM_ODDS = 1.05;
 const VALUE_TO_BET = 10;
 const SHOULD_LIMIT_TIME = false;
-const MAXIMUM_MORE_THAN = 3;
+const MAXIMUM_MORE_THAN = 4;
+const MAXIMUM_MORE_THAN_AGRESSIVE = 4;
+const MAXIMUM_MORE_THAN_CONSERVATIVE = 3;
 
 export interface IMatch {
   id: number;
@@ -29,6 +32,22 @@ export interface IMatch {
   moreThan: number;
   lessThan: number;
   odds: number;
+  attacksA: number;
+  attacksB: number;
+  dangerousAttackA: number;
+  dangerousAttackB: number;
+  cornerKickA: number;
+  cornerKickB: number;
+  redCardA: number;
+  redCardB: number;
+  yellowCardA: number;
+  yellowCardB: number;
+  onTargetA: number;
+  onTargetB: number;
+  offTargetA: number;
+  offTargetB: number;
+  possessionA: number;
+  possessionB: number;
 }
 
 interface IResponseData {
@@ -61,7 +80,7 @@ export default class Main {
 
   static loop = async () => {
     let minutes = 0;
-    let matchesFiltered = [];
+    let matchesFiltered: IMatch[] = [];
     let dataLength = 0;
     if (!(await Main.checkSpider())) {
       console.log(
@@ -71,30 +90,6 @@ export default class Main {
       await Main.loop();
       return;
     } else {
-      const setDateTime = function(date, str) {
-        var sp = str.split(":");
-        date.setHours(parseInt(sp[0], 10));
-        date.setMinutes(parseInt(sp[1], 10));
-        date.setSeconds(parseInt(sp[2], 10));
-        return date;
-      };
-
-      const c = new Date().getTime(),
-        start = setDateTime(new Date(), "04:00:00"),
-        end = setDateTime(new Date(), "15:00:00");
-
-      let invalidTime = c > start.getTime() && c < end.getTime();
-      if (invalidTime) console.log("Pausing bot. Running it again at 15:00");
-      // if (new Date().getTime() >= limitHour.getTime()) {
-      while (invalidTime) {
-        if (invalidTime) {
-          await sleep(60000);
-          console.log(chalk.green("Bot is now on."));
-        }
-        const d = new Date().getTime();
-        invalidTime = d > start.getTime() && d < end.getTime();
-      }
-
       try {
         const data = await Main.fetchMatches();
         minutes = data.nextMinute * 60000;
@@ -110,9 +105,17 @@ export default class Main {
               console.log(
                 `${item.id}: ${item.teamA} ${item.scoreA} x ${item.scoreB} ${
                   item.teamB
-                } odds: ${chalk.greenBright(item.odds)} ${
-                  item.url
-                } more than ${chalk.greenBright(item.moreThan)}`
+                } odds: ${chalk.greenBright(
+                  item.odds
+                )} more than ${chalk.greenBright(
+                  item.moreThan
+                )} DA: ${chalk.greenBright(
+                  parseInt(item.dangerousAttackA.toString()) +
+                    parseInt(item.dangerousAttackB.toString())
+                )}. RC: ${chalk.greenBright(
+                  parseInt(item.redCardA.toString()) +
+                    parseInt(item.redCardB.toString())
+                )}`
               );
             });
 
@@ -172,23 +175,7 @@ export default class Main {
     const finalMatches: IMatch[] = [];
     const promises = [];
 
-    const filteredMatches = matches.filter(
-      item => item.odds <= MAXIMUM_ODDS && item.moreThan < MAXIMUM_MORE_THAN
-    );
-    if (filteredMatches.length > 0)
-      console.log(
-        chalk.greenBright(
-          `${filteredMatches.length}/${matches.length} valid matches (odds <= ${MAXIMUM_ODDS}, more than < ${MAXIMUM_MORE_THAN})`
-        )
-      );
-    else
-      console.log(
-        chalk.red(
-          `${filteredMatches.length}/${matches.length} valid matches (odds <= ${MAXIMUM_ODDS}, more than < ${MAXIMUM_MORE_THAN})`
-        )
-      );
-
-    filteredMatches.forEach(async item => {
+    matches.forEach(async item => {
       const foundMatch = await matchRepository.findOne({
         where: { teamA: item.teamA, teamB: item.teamB }
       });
@@ -206,7 +193,23 @@ export default class Main {
         newMatch.url = item.url;
         newMatch.odds = item.odds;
         newMatch.date = new Date();
-
+        newMatch.attacksA = item.attacksA;
+        newMatch.attacksB = item.attacksB;
+        newMatch.dangerousAttackA = item.dangerousAttackA;
+        newMatch.dangerousAttackB = item.dangerousAttackB;
+        newMatch.cornerKickA = item.cornerKickA;
+        newMatch.cornerKickB = item.cornerKickB;
+        newMatch.redCardA = item.redCardA;
+        newMatch.redCardB = item.redCardB;
+        newMatch.yellowCardA = item.yellowCardA;
+        newMatch.yellowCardB = item.yellowCardB;
+        newMatch.onTargetA = item.onTargetA;
+        newMatch.onTargetB = item.onTargetB;
+        newMatch.offTargetA = item.offTargetA;
+        newMatch.offTargetB = item.offTargetB;
+        newMatch.possessionA = item.possessionA;
+        newMatch.possessionB = item.possessionB;
+        newMatch.lessThan = item.lessThan;
         const promise = matchRepository
           .save(newMatch)
           .then(result => {
@@ -218,9 +221,25 @@ export default class Main {
               odds: newMatch.odds,
               url: newMatch.url,
               id: result.id,
+              attacksA: newMatch.attacksA,
+              attacksB: newMatch.attacksB,
+              dangerousAttackA: newMatch.dangerousAttackA,
+              dangerousAttackB: newMatch.dangerousAttackB,
+              cornerKickA: newMatch.cornerKickA,
+              cornerKickB: newMatch.cornerKickB,
+              redCardA: newMatch.redCardA,
+              redCardB: newMatch.redCardB,
+              yellowCardA: newMatch.yellowCardA,
+              yellowCardB: newMatch.yellowCardB,
+              onTargetA: newMatch.onTargetA,
+              onTargetB: newMatch.onTargetB,
+              offTargetA: newMatch.offTargetA,
+              offTargetB: newMatch.offTargetB,
+              possessionA: newMatch.possessionA,
+              possessionB: newMatch.possessionB,
               time: "",
               moreThan: 0,
-              lessThan: 0
+              lessThan: newMatch.lessThan
             });
           })
           .catch(e => {
@@ -238,16 +257,78 @@ export default class Main {
       console.log(chalk.greenBright(`${promises.length} new matches.`));
     await Promise.all(promises);
 
-    await Main.makeBetAllUsers(filteredMatches);
+    let filteredMatchesAgressive = matches.filter(item => {
+      const redCardA = parseInt(item.redCardA.toString());
+      const redCardB = parseInt(item.redCardB.toString());
+      // console.log("Red card:", redCardA + redCardB);
+      const redCards = redCardA + redCardB;
+      return (
+        item.odds <= MAXIMUM_ODDS &&
+        item.moreThan < MAXIMUM_MORE_THAN_AGRESSIVE &&
+        redCards === 0
+      );
+    });
+    const filteredMatchesConservative = matches.filter(item => {
+      const redCardA = parseInt(item.redCardA.toString());
+      const redCardB = parseInt(item.redCardB.toString());
+      const dangerousAttackA = parseInt(item.dangerousAttackA.toString());
+      const dangerousAttackB = parseInt(item.dangerousAttackB.toString());
+      const redCards = redCardA + redCardB;
+      // console.log("Red card:", redCards);
+      const dangerousAttacks = dangerousAttackA + dangerousAttackB;
+      // console.log("Dangerous Attack:", dangerousAttacks);
 
-    if (matches.length > 0 && filteredMatches.length === 0) {
+      return (
+        item.odds <= MAXIMUM_ODDS &&
+        item.moreThan < MAXIMUM_MORE_THAN_CONSERVATIVE &&
+        redCards === 0 &&
+        dangerousAttacks <= 180
+      );
+    });
+    console.log(`Total matches > 80 min: ${matches.length}`);
+
+    const setDateTime = function(date, str) {
+      var sp = str.split(":");
+      date.setHours(parseInt(sp[0], 10));
+      date.setMinutes(parseInt(sp[1], 10));
+      date.setSeconds(parseInt(sp[2], 10));
+      return date;
+    };
+
+    const c = new Date().getTime(),
+      start = setDateTime(new Date(), "04:00:00"),
+      end = setDateTime(new Date(), "15:00:00");
+
+    let invalidTime = c > start.getTime() && c < end.getTime();
+    if (invalidTime) {
+      console.log("Interval for aggressive  estrategy");
+      filteredMatchesAgressive = [];
+    }
+    // if (new Date().getTime() >= limitHour.getTime()) {
+
+    if (matches.length > 0) {
+      console.log(
+        `Agressive strategy filter: ${filteredMatchesAgressive.length}`
+      );
+      console.log(
+        `Conservative strategy filter: ${filteredMatchesConservative.length}`
+      );
+      await Main.makeBetAllUsers(
+        filteredMatchesConservative,
+        filteredMatchesAgressive
+      );
+    }
+    if (matches.length > 0) {
       return 60000;
     } else {
       return 60000;
     }
   };
 
-  static makeBetAllUsers = async (matches: IMatch[]) => {
+  static makeBetAllUsers = async (
+    matchesConservative: IMatch[],
+    matchesAgressive: IMatch[]
+  ) => {
     const userRepository = getRepository(user);
     const userStatusRepository = getRepository(user_status);
     const activatedStatus = await userStatusRepository.findOne({
@@ -258,26 +339,29 @@ export default class Main {
       where: { status: activatedStatus }
     });
 
-    if (matches.length > 0) {
-      console.log(
-        chalk.greenBright.bold(
-          `Creating bets for ${matches.length} matches for ${users.length} users [new bet/bets]:`
+    const promises = [];
+
+    users.forEach(userToBet => {
+      const selectedArray =
+        userToBet.estrategy == 0
+          ? matchesConservative
+          : userToBet.estrategy == 2
+          ? matchesAgressive
+          : [];
+      promises.push(
+        makeBetUser(
+          userToBet,
+          selectedArray.slice(0, userToBet.simultaneousBet)
         )
       );
-      const promises = [];
-
-      users.forEach(userToBet => {
-        promises.push(
-          makeBetUser(userToBet, matches.slice(0, userToBet.simultaneousBet))
-        );
-      });
-      console.log(chalk.blueBright(`New bets: [success/bets]`));
-      await Promise.all(promises);
-      console.log(chalk.greenBright("Done"));
-    }
-    return true;
+    });
+    console.log(chalk.blueBright(`New bets: [success/bets]`));
+    await Promise.all(promises);
+    console.log(chalk.greenBright("Done"));
+    return;
   };
 }
+
 const getUnfinishedMatches = async matches => {};
 const makeBetUser = async (
   user: user,
@@ -294,7 +378,6 @@ const makeBetUser = async (
       `→ ${user.firstName} ${user.lastName}: ${filteredMatches.length}/${matches.length}`
     )
   );
-  console.log("ip: " + user.ip.ip);
   if (!user.ip.isValid) {
     console.log(
       chalk.red(
@@ -365,6 +448,8 @@ const makeBetUser = async (
         console.log(
           `${length} saved bet(s) for ${user.firstName} ${user.lastName}`
         );
+
+        // getResultsUser(user);
       } catch (e) {
         console.log(e.message);
         console.log(
@@ -390,6 +475,52 @@ const makeBetUser = async (
   }
 
   return filteredMatches;
+};
+
+export const getResultsUser = async (user: user) => {
+  const response = await axios.post("http://localhost:3002/getresults", {
+    username: user.betUsername,
+    password: user.betPassword,
+    ip: user.ip.ip,
+    limit: 25
+  });
+  interface IMatchResponse {
+    teamA: string;
+    teamB: string;
+    win: boolean;
+  }
+  interface IResponse {
+    results: IMatchResponse[];
+  }
+
+  const betRepository = getRepository(bet);
+  const data: IResponse = response.data;
+  const userBets = await betRepository.find({
+    where: { user: user },
+    order: { createdAt: "DESC" },
+    relations: ["match"]
+  });
+  for (let i = 0; i < data.results.length; i++) {
+    let foundMatch: bet;
+    for (let j = 0; j < userBets.length; j++) {
+      if (
+        data.results[i].teamA == userBets[j].match.teamA &&
+        data.results[i].teamB == userBets[j].match.teamB
+      ) {
+        foundMatch = userBets[j];
+      }
+    }
+    console.log(foundMatch);
+    if (foundMatch) {
+      console.log("FOUND", foundMatch);
+      console.log("FOUND", data.results[i]);
+      if (foundMatch.win === undefined || foundMatch.win === null) {
+        foundMatch.win = data.results[i].win ? 1 : 0;
+        console.log(`Updating bet ${foundMatch.id}: ${data.results[i].win}`);
+        await betRepository.save(foundMatch);
+      }
+    }
+  }
 };
 
 function sleep(ms) {

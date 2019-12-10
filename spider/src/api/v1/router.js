@@ -161,24 +161,12 @@ const getMatches = async page =>
         const time = item.querySelector(".ipo-Fixture_Time").firstChild
           .innerHTML;
         const team1 = teamStack[0].innerHTML;
-
-        // const mainMarkersScore = item.querySelector(".ipo-MainMarkets")
-        //   .lastElementChild;
-        // const participantCentered = mainMarkersScore.querySelectorAll(
-        //   ".gll-ParticipantCentered"
-        // );
-
-        // let lessThan = 0;
-
-        // if (participantCentered.length > 0) {
-        //   moreThan = participantCentered[0].querySelector(
-        //     ".gll-ParticipantCentered_Odds"
-        //   ).innerHTML;
-
-        //   lessThan = participantCentered[1].querySelector(
-        //     ".gll-ParticipantCentered_Odds"
-        //   ).innerHTML;
-        // }
+        const scoreTeamA = item.querySelectorAll(
+          ".ipo-Fixture_CompetitorScores"
+        )[0].innerText;
+        const scoreTeamB = item.querySelectorAll(
+          ".ipo-Fixture_CompetitorScores"
+        )[1].innerText;
 
         const team2 = teamStack[1].innerHTML;
         const boundaries = item.getBoundingClientRect();
@@ -192,9 +180,9 @@ const getMatches = async page =>
           date: new Date(),
           time,
           teamA: team1,
-          scoreA: 0,
+          scoreA: scoreTeamA,
           teamB: team2,
-          scoreB: 0,
+          scoreB: scoreTeamB,
           moreThan: 0,
           lessThan: 0,
           top: boundaries.top
@@ -362,7 +350,164 @@ const launchBrowser = async auth => {
     });
 };
 
+const getStatistics = async page =>
+  await page.evaluate(async () => {
+    let attacksA = 0;
+    let attacksB = 0;
+    let dangerousAttackA = 0;
+    let dangerousAttackB = 0;
+    let cornerKickA = 0;
+    let cornerKickB = 0;
+    let redCardA = 0;
+    let redCardB = 0;
+    let yellowCardA = 0;
+    let yellowCardB = 0;
+    let onTargetA = 0;
+    let onTargetB = 0;
+    let offTargetA = 0;
+    let offTargetB = 0;
+    let possessionA = 0;
+    let possessionB = 0;
+
+    const invalidValue = -1;
+
+    try {
+      attacksA = document.querySelector(
+        ".ml1-StatsWheel:nth-child(1) .ml1-StatsWheel_Team1Text"
+      ).innerText;
+    } catch {
+      attacksA = invalidValue;
+    }
+    try {
+      attacksB = document.querySelector(
+        ".ml1-StatsWheel:nth-child(1) .ml1-StatsWheel_Team2Text"
+      ).innerText;
+    } catch {
+      attacksB = invalidValue;
+    }
+    try {
+      dangerousAttackA = document.querySelector(
+        ".ml1-StatsWheel:nth-child(2) .ml1-StatsWheel_Team1Text"
+      ).innerText;
+    } catch {
+      dangerousAttackA = invalidValue;
+    }
+    try {
+      dangerousAttackB = document.querySelector(
+        ".ml1-StatsWheel:nth-child(2) .ml1-StatsWheel_Team2Text"
+      ).innerText;
+    } catch {
+      dangerousAttackB = invalidValue;
+    }
+
+    try {
+      possessionA = document.querySelector(
+        ".ml1-StatsWheel:nth-child(3) .ml1-StatsWheel_Team1Text"
+      ).innerText;
+    } catch {
+      possessionA = invalidValue;
+    }
+
+    try {
+      possessionB = document.querySelector(
+        ".ml1-StatsWheel:nth-child(3) .ml1-StatsWheel_Team2Text"
+      ).innerText;
+    } catch {
+      possessionB = invalidValue;
+    }
+
+    try {
+      cornerKickA = document.querySelectorAll(".ml1-StatsColumn_MiniValue")[0]
+        .innerText;
+    } catch {
+      cornerKickA = invalidValue;
+    }
+
+    try {
+      redCardA = document.querySelectorAll(".ml1-StatsColumn_MiniValue")[1]
+        .innerText;
+    } catch {
+      attacksA = invalidValue;
+    }
+    try {
+      yellowCardA = document.querySelectorAll(".ml1-StatsColumn_MiniValue")[2]
+        .innerText;
+    } catch {
+      yellowCardA = invalidValue;
+    }
+    try {
+      cornerKickB = document.querySelectorAll(".ml1-StatsColumn_MiniValue")[3]
+        .innerText;
+    } catch {
+      cornerKickB = invalidValue;
+    }
+    try {
+      redCardB = document.querySelectorAll(".ml1-StatsColumn_MiniValue")[4]
+        .innerText;
+    } catch {
+      redCardB = invalidValue;
+    }
+    try {
+      yellowCardB = document.querySelectorAll(".ml1-StatsColumn_MiniValue")[5]
+        .innerText;
+    } catch {
+      yellowCardB = invalidValue;
+    }
+    const onTargetWrapper = document.querySelector(
+      ".ml1-StatsLower_MiniBarWrapper:nth-child(1)"
+    );
+    try {
+      onTargetA = onTargetWrapper.querySelector(".ml1-StatsBar_MiniBar")
+        .children[0].innerText;
+    } catch {
+      onTargetA = invalidValue;
+    }
+
+    try {
+      onTargetB = onTargetWrapper.querySelector(".ml1-StatsBar_MiniBar")
+        .children[2].innerText;
+    } catch {
+      onTargetB = invalidValue;
+    }
+
+    const offTargetWrapper = document.querySelector(
+      ".ml1-StatsLower_MiniBarWrapper:nth-child(2)"
+    );
+    try {
+      offTargetA = offTargetWrapper.querySelector(".ml1-StatsBar_MiniBar")
+        .children[0].innerText;
+    } catch {
+      offTargetA = invalidValue;
+    }
+    try {
+      offTargetB = offTargetWrapper.querySelector(".ml1-StatsBar_MiniBar")
+        .children[2].innerText;
+    } catch {
+      offTargetB = invalidValue;
+    }
+
+    return {
+      attacksA,
+      attacksB,
+      dangerousAttackA,
+      dangerousAttackB,
+      cornerKickA,
+      cornerKickB,
+      redCardA,
+      redCardB,
+      yellowCardA,
+      yellowCardB,
+      onTargetA,
+      onTargetB,
+      offTargetA,
+      offTargetB,
+      possessionA,
+      possessionB
+    };
+  });
+
 const fetchMatches = async () => {
+  const browser = await launchBrowser();
   let allMatches = [];
 
   let nextMinute = 0;
@@ -373,7 +518,6 @@ const fetchMatches = async () => {
 
   const timeStart = new Date();
   const fetch = async () => {
-    const browser = await launchBrowser();
     const page = await browser.newPage();
     await page.emulate(iPhonex);
     // await page.authenticate({
@@ -428,25 +572,66 @@ const fetchMatches = async () => {
         console.log(chalk.white.dim(`Looking for goals tab...`));
         // await sleep(delay);
 
-        await page.waitForSelector(".ipe-EventViewTabLink");
+        // await page.waitForSelector(".ipe-EventViewTabLink");
+        await page.waitForSelector(".ml1-HintsManager");
         const odds = await getOdds(page);
         const URL = await getURL(page);
-        matches[i].url = URL;
-
-        delay = getRandomDelay();
-
-        matches[i].odds = 0;
-        matches[i].moreThan = 0;
 
         if (odds !== undefined && odds != null) {
           matches[i].odds = odds.odds;
           matches[i].moreThan = odds.moreThan;
+          await sleep(600);
+          try {
+            const statistics = await getStatistics(page);
+            const {
+              attacksA,
+              attacksB,
+              dangerousAttackA,
+              dangerousAttackB,
+              cornerKickA,
+              cornerKickB,
+              redCardA,
+              redCardB,
+              yellowCardA,
+              yellowCardB,
+              onTargetA,
+              onTargetB,
+              offTargetA,
+              offTargetB,
+              possessionA,
+              possessionB
+            } = statistics;
+            matches[i].attacksA = attacksA;
+            matches[i].attacksB = attacksB;
+            matches[i].dangerousAttackA = dangerousAttackA;
+            matches[i].dangerousAttackB = dangerousAttackB;
+            matches[i].cornerKickA = cornerKickA;
+            matches[i].cornerKickB = cornerKickB;
+            matches[i].redCardA = redCardA;
+            matches[i].redCardB = redCardB;
+            matches[i].yellowCardA = yellowCardA;
+            matches[i].yellowCardB = yellowCardB;
+            matches[i].onTargetA = onTargetA;
+            matches[i].onTargetB = onTargetB;
+            matches[i].offTargetA = offTargetA;
+            matches[i].offTargetB = offTargetB;
+            matches[i].possessionA = possessionA;
+            matches[i].possessionB = possessionB;
+          } catch (e) {
+            console.log(e.message);
+            await sleep(400000);
+          }
           console.log(
             chalk.green.dim(`Odds: ${odds.odds}. More Than ${odds.moreThan}.`)
           );
         } else {
           console.log(chalk.red.dim(`No valid bet found.`));
+          matches[i].odds = 0;
+          matches[i].moreThan = 0;
         }
+        matches[i].url = URL;
+
+        delay = getRandomDelay();
       } else {
         console.log(
           chalk.red(`Match no longer exists. Going back in ${delay / 1000}s...`)
@@ -494,13 +679,15 @@ const fetchMatches = async () => {
         } valid matches. Next match in ${nextMinute} minutes`
       )
     );
-    await browser.close();
   };
 
   try {
     await fetch();
-  } catch {
-    nextMinute = 2;
+  } catch (e) {
+    console.log(e.message);
+    nextMinute = 30;
+  } finally {
+    await browser.close();
   }
   return { matches: filteredMatches, nextMinute };
 };
@@ -515,9 +702,15 @@ const typeInput = async (input, word) => {
 };
 
 router.use("/match", async (req, res) => {
-  const matches = await fetchMatches();
-
-  res.send(matches);
+  const data = await fetchMatches();
+  const filteredMatches = data.matches.filter(item => {
+    let oddInt = 0;
+    try {
+      oddInt = parseFloat(item.odds);
+    } catch {}
+    return oddInt >= 1;
+  });
+  res.send({ matches: filteredMatches, nextMinute: data.nextMinute });
 });
 
 router.post("/check", async (req, res) => {
@@ -982,6 +1175,177 @@ router.use("/bet/match", async (req, res) => {
 
 router.use("/health", async (req, res) => {
   res.status(200).send();
+});
+
+router.use("/getresults", async (req, res) => {
+  const browser = await launchBrowser(true);
+  try {
+    const { username, password, ip, limit } = req.body;
+
+    const promises = [];
+
+    const results = [];
+
+    const page = await browser.newPage();
+    await page.emulate(iPhonex);
+
+    const options = {
+      username: `lum-customer-hl_999dc5f5-zone-static-ip-${ip}`,
+      password: "juohlhy66kgb"
+    };
+
+    await page.authenticate(options);
+    await sleep(1000);
+    await page.goto(`${BASE_URL}${URL_FRAGMENT}`);
+
+    await page.waitForSelector(".ipo-Fixture");
+
+    let bets = [];
+    await page.exposeFunction("setBets", a => (bets = a));
+
+    const bugLogin = await page.evaluate(
+      async (DELAY_TYPING, DELAY_SLOW, DELAY_BASIC, username, password) => {
+        function sleep(ms) {
+          return new Promise(resolve => {
+            setTimeout(resolve, ms);
+          });
+        }
+
+        const getRandomDelay = (slow, typing) => {
+          if (typing) {
+            let msVariant = Math.floor(Math.random() * 50);
+
+            const positiveOrNot = Math.floor(Math.random() * 1);
+
+            if (positiveOrNot === 0) {
+              msVariant *= -1;
+            }
+
+            return DELAY_TYPING + msVariant;
+          } else {
+            let msVariant = Math.floor(Math.random() * 100);
+
+            const positiveOrNot = Math.floor(Math.random() * 1);
+
+            if (positiveOrNot === 0) {
+              msVariant *= -1;
+            }
+
+            if (slow && !typing) return DELAY_SLOW + msVariant;
+
+            return DELAY_BASIC + msVariant;
+          }
+        };
+
+        const typeInput = async (input, word) => {
+          for (let i = 0; i < word.length; i++) {
+            input.value = `${input.value}${word[i]}`;
+            await sleep(getRandomDelay(true, true));
+          }
+
+          return true;
+        };
+
+        const loginButton = document.querySelector(
+          ".hm-LoggedOutButtons_Login"
+        );
+
+        await sleep(getRandomDelay());
+        loginButton.click();
+
+        let found = false;
+        for (let attempts = 0; attempts < 12; attempts++) {
+          if (!document.querySelector(".lm-StandardLogin_Username")) {
+            await sleep(1000);
+          } else {
+            found = true;
+            attempts = 12;
+          }
+        }
+        if (!found) {
+          return "input not found. BUG";
+        }
+        const emailInput = document.querySelector(".lm-StandardLogin_Username");
+        const passwordInput = document.querySelector(
+          ".lm-StandardLogin_Password"
+        );
+
+        await sleep(getRandomDelay(true));
+
+        emailInput.value = "";
+        emailInput.focus();
+        await typeInput(emailInput, username);
+        await sleep(getRandomDelay());
+
+        await sleep(getRandomDelay(true));
+        await typeInput(passwordInput, password);
+        await sleep(getRandomDelay(true));
+        const okButton = document.querySelector(
+          ".lm-StandardLogin_LoginButton"
+        );
+        okButton.click();
+      },
+      DELAY_TYPING,
+      DELAY_SLOW,
+      DELAY_BASIC,
+      username,
+      password
+    );
+    if (bugLogin) {
+      console.log(chalk.red(bug));
+    }
+    await sleep(3000);
+    await page.goto("https://mobile.bet365.com/#/MB/");
+
+    await page.waitForSelector(".myb-MyBetsHeader_Container");
+    await sleep(500);
+    await page.evaluate(async limit => {
+      function sleep(ms) {
+        return new Promise(resolve => {
+          setTimeout(resolve, ms);
+        });
+      }
+      document.querySelector(".myb-MyBetsHeader_Container").children[3].click();
+      await sleep(500);
+      const betsArray = document.querySelectorAll(".myb-SettledBetItemHeader");
+      const length = betsArray.length;
+      const bets = [];
+      const limitInt = parseInt(limit);
+      const max = length > limitInt ? limitInt : length;
+      if (max === 0) await sleep(1000000);
+      for (let i = 0; i < max; i++) {
+        await sleep(300);
+        if (i > 2) betsArray[i].click();
+        const teams = betsArray[i].parentElement
+          .querySelector(".myb-SettledBetParticipant_FixtureDescription")
+          .innerText.split(" v ");
+        await sleep(100);
+        const teamA = teams[0];
+        const teamB = teams[1];
+        const resultLabel = betsArray[i].querySelector(
+          ".myb-SettledBetItem_BetStateLabel"
+        ).innerText;
+        const win =
+          !resultLabel.toLowerCase().includes("perdida") &&
+          !resultLabel.toLowerCase().includes("lost");
+        bets.push({
+          teamA,
+          teamB,
+          win
+        });
+      }
+      await window.setBets(bets);
+
+      return;
+    }, limit);
+
+    await browser.close();
+    res.send({ results: bets });
+  } catch (e) {
+    console.log(chalk.redBright(`An error has occurred. ${e.message}`));
+    await browser.close();
+    res.send({ results: [] });
+  }
 });
 
 router.use("/ip/:ip", async (req, res) => {

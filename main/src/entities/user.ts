@@ -128,6 +128,14 @@ export class user {
     ip:ValidIp | null;
 
 
+    @Column("int",{ 
+        nullable:false,
+        default: () => "'0'",
+        name:"estrategy"
+        })
+    estrategy:number;
+        
+
    
     @OneToMany(()=>bet, (bet: bet)=>bet.user,{ onDelete: 'NO ACTION' ,onUpdate: 'NO ACTION' })
     bets:bet[];

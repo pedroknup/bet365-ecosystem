@@ -76,6 +76,149 @@ export class match {
     url:string;
         
 
+    @Column("int",{ 
+        nullable:false,
+        default: () => "'0'",
+        name:"possessionA"
+        })
+    possessionA:number;
+        
+
+    @Column("int",{ 
+        nullable:false,
+        default: () => "'0'",
+        name:"possessionB"
+        })
+    possessionB:number;
+        
+
+    @Column("int",{ 
+        nullable:false,
+        default: () => "'0'",
+        name:"attacksA"
+        })
+    attacksA:number;
+        
+
+    @Column("int",{ 
+        nullable:false,
+        default: () => "'0'",
+        name:"attacksB"
+        })
+    attacksB:number;
+        
+
+    @Column("int",{ 
+        nullable:false,
+        default: () => "'0'",
+        name:"dangerousAttackA"
+        })
+    dangerousAttackA:number;
+        
+
+    @Column("int",{ 
+        nullable:false,
+        default: () => "'0'",
+        name:"dangerousAttackB"
+        })
+    dangerousAttackB:number;
+        
+
+    @Column("int",{ 
+        nullable:false,
+        default: () => "'0'",
+        name:"cornerKickA"
+        })
+    cornerKickA:number;
+        
+
+    @Column("int",{ 
+        nullable:false,
+        default: () => "'0'",
+        name:"cornerKickB"
+        })
+    cornerKickB:number;
+        
+
+    @Column("int",{ 
+        nullable:false,
+        default: () => "'0'",
+        name:"redCardA"
+        })
+    redCardA:number;
+        
+
+    @Column("int",{ 
+        nullable:false,
+        default: () => "'0'",
+        name:"redCardB"
+        })
+    redCardB:number;
+        
+
+    @Column("int",{ 
+        nullable:false,
+        default: () => "'0'",
+        name:"yellowCardA"
+        })
+    yellowCardA:number;
+        
+
+    @Column("int",{ 
+        nullable:false,
+        default: () => "'0'",
+        name:"yellowCardB"
+        })
+    yellowCardB:number;
+        
+
+    @Column("int",{ 
+        nullable:false,
+        default: () => "'0'",
+        name:"onTargetA"
+        })
+    onTargetA:number;
+        
+
+    @Column("int",{ 
+        nullable:false,
+        default: () => "'0'",
+        name:"onTargetB"
+        })
+    onTargetB:number;
+        
+
+    @Column("int",{ 
+        nullable:false,
+        default: () => "'0'",
+        name:"offTargetA"
+        })
+    offTargetA:number;
+        
+
+    @Column("int",{ 
+        nullable:false,
+        default: () => "'0'",
+        name:"offTargetB"
+        })
+    offTargetB:number;
+        
+
+    @Column("double",{ 
+        nullable:true,
+        precision:22,
+        name:"lessThan"
+        })
+    lessThan:number | null;
+        
+
+    @Column("int",{ 
+        nullable:true,
+        name:"winner"
+        })
+    winner:number | null;
+        
+
    
     @OneToMany(()=>bet, (bet: bet)=>bet.match,{ onDelete: 'NO ACTION' ,onUpdate: 'NO ACTION' })
     bets:bet[];

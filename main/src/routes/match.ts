@@ -7,9 +7,9 @@ const router = Router();
 //Get all users
 
 // Get one user
-router.post(
+router.get(
   "/",
-  MatchController.list
+  MatchController.checkPK
 );
 // router.get("/b", MatchController.pageString);
 
