@@ -11,6 +11,7 @@ import './styles.scss';
 // import  } from '../containers';
 import { authThunk } from 'app/middleware/auth.thunk';
 import { HomeContainerProps } from '../containers';
+import EnhancedTable from './bets-table';
 
 export interface IHomeComponentProps extends HomeContainerProps {}
 
@@ -55,9 +56,14 @@ export const HomeComponent = (
   const [currentLoginState, setCurrentLoginState] = React.useState(loginState.signin);
   const { isLoading, password, email, token, errorMsg, history } = props;
   const classes = useStyles();
-  if (!token){
+  if (!token) {
     history.push("/login")
     return <div>Redirect</div>
   }
-  return <div className="home-container">HOME Token: {token}</div>;
+  return (
+    <div className="home-container">
+      HOME Token: {token}
+      <EnhancedTable title={"Bets"} />
+    </div>
+  );
 };

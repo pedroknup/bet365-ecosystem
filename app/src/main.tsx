@@ -22,7 +22,7 @@ const store2 = configureStore(history, {
     facebookId: '',
     FBToken: '',
     IGToken: '',
-    email: '',
+    email: 'phknup@gmail.com',
     password: ''
   }
 });

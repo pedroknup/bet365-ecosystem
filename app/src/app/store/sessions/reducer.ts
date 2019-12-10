@@ -10,7 +10,7 @@ const defaultState: ISessionState = {
   errorMsg: '',
   FBToken: '',
   IGToken: '',
-  email: '',
+  email: 'phknup@gmail.com',
   password: ''
 };
 

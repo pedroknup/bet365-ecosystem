@@ -45,8 +45,8 @@ interface ILoginFormProps {
 }
 export const LoginSignInForm = (props: ILoginFormProps) => {
   const classes = useStyles();
-  const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
+  const [email, setEmail] = React.useState('phknup@gmail.com');
+  const [password, setPassword] = React.useState('123123');
   const { errorMsg } = props;
   return (
     <div className="login-content">
