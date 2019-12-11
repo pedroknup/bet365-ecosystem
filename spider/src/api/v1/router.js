@@ -139,6 +139,8 @@ const loginWithPage = async (page, username, password, ip) => {
         const okButton = document.querySelector(
           ".lm-StandardLogin_LoginButton"
         );
+        document.querySelector(".lm-Checkbox_Input").click();
+        await sleep(500);
         okButton.click();
       },
       DELAY_TYPING,
@@ -190,7 +192,10 @@ const getBetsCountFromPage = async page => {
 const makeBetFromPage = async (match, maxOdd, valueToBet, page) => {
   try {
     await page.goto(match.url);
-    await page.waitForSelector(".ipe-EventViewMarketTabs");
+
+    await page.waitForSelector(".ipe-EventViewMarketTabs", {
+      timeout: 6000
+    });
   } catch {
     return false;
   }
@@ -267,6 +272,20 @@ const makeBetFromPage = async (match, maxOdd, valueToBet, page) => {
               const betOdds = goalsValues.lastElementChild.lastElementChild.querySelector(
                 ".ipe-Participant_OppOdds"
               ).innerHTML;
+              const closePreviousBet = document.querySelector(
+                ".qb-MessageContainer_Indicator"
+              );
+              const deleteButton = document.querySelector(".qb-DeleteButton");
+
+              if (closePreviousBet) {
+                closePreviousBet.click();
+                await sleep(200);
+              }
+              if (deleteButton) {
+                deleteButton.click();
+                await sleep(200);
+              }
+
               if (oddsValue <= maxOdd) {
                 if (!goalsValues.lastElementChild.lastElementChild) {
                   return "Not found odds field. [BUG]!";
@@ -317,11 +336,27 @@ const makeBetFromPage = async (match, maxOdd, valueToBet, page) => {
                     // }
                     return true;
                   } else {
+                    const header = document.querySelector("qb-Header");
+                    if (header) {
+                      try {
+                        const bgcolor = window
+                          .getComputedStyle(
+                            document.querySelector("#custom-bg-preview"),
+                            null
+                          )
+                          .getPropertyValue("background-color");
+
+                        if (bgcolor.includes("rgb(232, 94, 70)")) {
+                          return false;
+                        }
+                      } catch {}
+                    }
+                    //e85e46
                     await sleep(1000);
                   }
                 }
 
-                await false;
+                return false;
               } else {
                 return `Match ${match.url} odds is now ${oddsValue} and the limit is ${maxOdd}`;
               }
@@ -330,6 +365,7 @@ const makeBetFromPage = async (match, maxOdd, valueToBet, page) => {
         }
       } else {
         console.log("Goal panel not found");
+        return false;
       }
     },
     match,
@@ -342,6 +378,7 @@ const makeBetFromPage = async (match, maxOdd, valueToBet, page) => {
     console.log("bug");
     return false;
   }
+  if (result === false) return false;
 
   return true;
 };
@@ -378,6 +415,11 @@ class browserManager {
   // ip
   static betsQueue = [];
 
+  //id
+  //ip
+  static activeIps = [];
+
+  static reqId = 0;
   static pageId = 0;
 
   static getNewPageId() {
@@ -385,12 +427,20 @@ class browserManager {
     return this.pageId;
   }
 
+  static getNewReqId() {
+    this.reqId++;
+    return this.reqId;
+  }
+
   static async closeExcessPage(browserInstance, idPage) {
     const foundBrowser = this.browserInstancies.find(
       item => item.ip === browserInstance.ip
     );
     if (foundBrowser) {
-      if (!this.betsQueue.find(item => item.ip === browserInstance.ip)) {
+      if (
+        !this.activeIps.filter(item => item.ip === browserInstance.ip).length >
+        1
+      ) {
         const foundPage = browserInstance.pages.find(item => item.id == idPage);
         if (foundPage) {
           if (foundPage.id != 0) await foundPage.page.close();
@@ -401,10 +451,10 @@ class browserManager {
         browserInstance.pages[0].isBusy = false;
         const pages = await browserInstance.browser.pages();
         const pagesLength = pages.length;
+
         for (let i = 2; i < pagesLength; i++) {
           await pages[i].close();
         }
-       
       }
     }
   }
@@ -421,7 +471,13 @@ class browserManager {
   }
   static async getPageInstanceByBrowserInstance(browserInstance) {
     const { browser, ip } = browserInstance;
-    if (browserInstance.pages.length == 0) {
+    const reqLength = this.activeIps.filter(
+      item => item.ip === browserInstance.ip
+    ).length;
+
+    console.log("length", browserInstance.pages.length);
+    if (browserInstance.pages.length == 0 && reqLength == 1) {
+      console.log("creating new page");
       const pageInstance = await this.createNewPageByBrowserIp(
         browser,
         ip,
@@ -430,14 +486,9 @@ class browserManager {
       browserInstance.pages.push(pageInstance);
       return pageInstance;
     } else {
-      const isRunning = this.betsQueue.find(
-        item => item.ip === browserInstance.ip
-      );
+      const isRunning = reqLength > 1;
       if (isRunning) {
-        const pageInstance = await this.createNewPageByBrowserIp(
-          browser,
-          ip
-        );
+        const pageInstance = await this.createNewPageByBrowserIp(browser, ip);
         browserInstance.pages.push(pageInstance);
         return pageInstance;
       } else {
@@ -453,10 +504,7 @@ class browserManager {
       return foundBrowser;
     } else {
       const browser = await launchBrowser(true);
-      const newPage = await this.createNewPageByBrowserIp(browser, ip);
-      newPage.isBusy = false;
       const pages = [];
-      pages.push(newPage);
       const instance = {
         browser,
         pages,
@@ -1341,17 +1389,32 @@ router.use("/bet/match", async (req, res) => {
   // browserManager;
   const { username, password } = req.body.user;
   const { matches, maxOdd, valueToBet, limitBets, ip } = req.body;
+  let successfullyBets = [];
+  console.log(req.body)
+  const reqId = browserManager.getNewReqId();
+  browserManager.activeIps.push({
+    id: reqId,
+    ip
+  });
+  try {
+    successfullyBets = await browserManager.makeBets(
+      matches,
+      username,
+      password,
+      ip,
+      maxOdd,
+      valueToBet,
+      limitBets
+    );
+  } catch (e) {
+    console.log(e.message);
+  }
 
-  const successfullyBets = await browserManager.makeBets(
-    matches,
-    username,
-    password,
-    ip,
-    maxOdd,
-    valueToBet,
-    limitBets
+  browserManager.activeIps = browserManager.activeIps.filter(
+    item => item.id != reqId
   );
-  res.status(200).send(successfullyBets);
+
+  res.status(200).send({ successfullyBets });
 });
 
 router.use("/health", async (req, res) => {

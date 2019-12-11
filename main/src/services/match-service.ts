@@ -139,18 +139,19 @@ export default class Main {
       }
 
       if (minutes === undefined) {
-        console.log("There're no matches. Looking again in 5 min...");
-        minutes = 60000 * 5;
-      } else if (minutes > 60000 * 10) {
+        console.log("There're no matches. Looking again in 30 min...");
+        minutes = 30000 * 5;
+      } else if (minutes > 60000 * 30) {
         console.log(`${minutes / 60000} min is too big. Changing to 30 min.`);
         minutes = 60000 * 30;
-      } else if (minutes < 60000 * 3 && dataLength > 0) {
-        console.log(
-          `${minutes /
-            60000} min is too short and there is a bet process running. Changing to 3 min.`
-        );
-        minutes = 60000 * 3;
       }
+      // else if (minutes < 60000 * 3 && dataLength > 0) {
+      //   console.log(
+      //     `${minutes /
+      //       60000} min is too short and there is a bet process running. Changing to 3 min.`
+      //   );
+      //   minutes = 60000 * 3;
+      // }
       await sleep(minutes);
       Main.loop();
     }
