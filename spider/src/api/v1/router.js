@@ -1113,7 +1113,7 @@ router.use("/bet/match", async (req, res) => {
                         // }
                         document.querySelector(".qb-PlaceBetButton").click();
                         await sleep(1000);
-                        for (let attempts = 0; attempts < 10; attempts++) {
+                        for (let attempts = 0; attempts < 14; attempts++) {
                           const finishLabel = document.querySelector(
                             ".qb-Header_Visible"
                           );
@@ -1315,22 +1315,28 @@ router.use("/getresults", async (req, res) => {
       if (max === 0) await sleep(1000000);
       for (let i = 0; i < max; i++) {
         await sleep(300);
-        if (i > 2) betsArray[i].click();
+        betsArray[i].click();
         const teams = betsArray[i].parentElement
           .querySelector(".myb-SettledBetParticipant_FixtureDescription")
           .innerText.split(" v ");
         await sleep(100);
         const teamA = teams[0];
         const teamB = teams[1];
+        const returnValue = betsArray[i].parentElement
+          .querySelector(".myb-SettledBetItemFooter_ReturnText")
+          .innerText.replace("R$", "")
+          .replace(",", ".");
         const resultLabel = betsArray[i].querySelector(
           ".myb-SettledBetItem_BetStateLabel"
         ).innerText;
+        console.log(betsArray[i]);
         const win =
           !resultLabel.toLowerCase().includes("perdida") &&
           !resultLabel.toLowerCase().includes("lost");
         bets.push({
           teamA,
           teamB,
+          returnValue,
           win
         });
       }

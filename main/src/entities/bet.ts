@@ -59,4 +59,12 @@ export class bet {
         })
     win:number | null;
         
+
+    @Column("double",{ 
+        nullable:true,
+        precision:22,
+        name:"return"
+        })
+    return:number | null;
+        
 }

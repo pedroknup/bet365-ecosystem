@@ -142,8 +142,8 @@ export default class Main {
         console.log("There're no matches. Looking again in 5 min...");
         minutes = 60000 * 5;
       } else if (minutes > 60000 * 10) {
-        console.log(`${minutes / 60000} min is too big. Changing to 5 min.`);
-        minutes = 60000 * 5;
+        console.log(`${minutes / 60000} min is too big. Changing to 30 min.`);
+        minutes = 60000 * 30;
       } else if (minutes < 60000 * 3 && dataLength > 0) {
         console.log(
           `${minutes /
@@ -487,6 +487,7 @@ export const getResultsUser = async (user: user) => {
   interface IMatchResponse {
     teamA: string;
     teamB: string;
+    returnValue: number;
     win: boolean;
   }
   interface IResponse {
@@ -516,6 +517,10 @@ export const getResultsUser = async (user: user) => {
       console.log("FOUND", data.results[i]);
       if (foundMatch.win === undefined || foundMatch.win === null) {
         foundMatch.win = data.results[i].win ? 1 : 0;
+        foundMatch.return = data.results[i].win
+          ? data.results[i].returnValue
+          : 0;
+
         console.log(`Updating bet ${foundMatch.id}: ${data.results[i].win}`);
         await betRepository.save(foundMatch);
       }

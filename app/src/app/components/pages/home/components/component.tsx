@@ -57,13 +57,19 @@ export const HomeComponent = (
   const { isLoading, password, email, token, errorMsg, history } = props;
   const classes = useStyles();
   if (!token) {
-    history.push("/login")
-    return <div>Redirect</div>
+    history.push('/login');
+    return <div>Redirect</div>;
   }
+  
   return (
     <div className="home-container">
-      HOME Token: {token}
-      <EnhancedTable title={"Bets"} />
+
+      <span style={{ maxWidth: 200, whiteSpace:'normal', overflow: 'scroll', display: 'block' }}>HOME Token: {token}</span>
+      {props.bets && props.bets.length}
+      <EnhancedTable rows={props.bets ? props.bets : []} title={'Bets'} />
+      <button onClick={()=>{
+        props.fetchBets(token);
+      }}>Fetch</button>
     </div>
   );
 };

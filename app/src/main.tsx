@@ -24,6 +24,10 @@ const store2 = configureStore(history, {
     IGToken: '',
     email: 'phknup@gmail.com',
     password: ''
+  },
+  bet: {
+    isLoading: false,
+    bets: []
   }
 });
 

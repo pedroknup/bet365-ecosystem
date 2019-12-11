@@ -82,7 +82,7 @@ function createData(
   };
 }
 
-const rows = [
+const rowsOld = [
   createData(0, 'Cruzeiro', 'Palmeiras', 2.5, 1.02, 1, 5),
   createData(1, 'Atlético-MG', 'Corinthians', 2.5, 1.02, 1, 5),
   createData(2, 'São Paulo', 'Flamengo', 2.5, 1.03, 1, 5),
@@ -175,9 +175,7 @@ const EnhancedTableHead = (
               onClick={createSortHandler(headCell.id)}
             >
               {headCell.label}
-              {orderBy === headCell.id ? (
-                <span>{order === 'desc' ? '' : ''}</span>
-              ) : null}
+              {orderBy === headCell.id ? <span>{order === 'desc' ? '' : ''}</span> : null}
             </TableSortLabel>
           </TableCell>
         ))}
@@ -198,7 +196,7 @@ const EnhancedTableToolbar = (props: { numSelected: number; title: string }) => 
         </Typography>
       ) : (
         <Typography variant="h6" id="tableTitle">
-          Nutrition
+          {title}
         </Typography>
       )}
 
@@ -215,8 +213,9 @@ const EnhancedTableToolbar = (props: { numSelected: number; title: string }) => 
   );
 };
 
-export default function EnhancedTable(props: { title: string }) {
+export default function EnhancedTable(props: { rows: bet[]; title: string }) {
   const [order, setOrder] = React.useState<'asc' | 'desc'>('asc');
+  const rows = props.rows;
   const [orderBy, setOrderBy] = React.useState('');
   const [selected, setSelected] = React.useState<any[]>([]);
   const [page, setPage] = React.useState(0);
@@ -238,24 +237,25 @@ export default function EnhancedTable(props: { title: string }) {
     setSelected([]);
   };
 
-  const handleClick = (event: any, name: any) => {
-    const selectedIndex = selected.indexOf(name);
-    let newSelected: any[] = [];
+  const handleClick = (row: bet) => {
+    console.log(row);
+    // const selectedIndex = selected.indexOf(name);
+    // let newSelected: any[] = [];
 
-    if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, name);
-    } else if (selectedIndex === 0) {
-      newSelected = newSelected.concat(selected.slice(1));
-    } else if (selectedIndex === selected.length - 1) {
-      newSelected = newSelected.concat(selected.slice(0, -1));
-    } else if (selectedIndex > 0) {
-      newSelected = newSelected.concat(
-        selected.slice(0, selectedIndex),
-        selected.slice(selectedIndex + 1)
-      );
-    }
+    // if (selectedIndex === -1) {
+    //   newSelected = newSelected.concat(selected, name);
+    // } else if (selectedIndex === 0) {
+    //   newSelected = newSelected.concat(selected.slice(1));
+    // } else if (selectedIndex === selected.length - 1) {
+    //   newSelected = newSelected.concat(selected.slice(0, -1));
+    // } else if (selectedIndex > 0) {
+    //   newSelected = newSelected.concat(
+    //     selected.slice(0, selectedIndex),
+    //     selected.slice(selectedIndex + 1)
+    //   );
+    // }
 
-    setSelected(newSelected);
+    // setSelected(newSelected);
   };
 
   const handleChangePage = (event: any, newPage: number) => {
@@ -276,7 +276,7 @@ export default function EnhancedTable(props: { title: string }) {
   const emptyRows = 0;
 
   return (
-    <div>
+    <div style={{ position: 'relative', maxWidth: 800, overflow: 'scroll' }}>
       <Paper>
         <EnhancedTableToolbar title={props.title} numSelected={selected.length} />
         <div>
@@ -303,7 +303,7 @@ export default function EnhancedTable(props: { title: string }) {
                   return (
                     <TableRow
                       hover
-                      onClick={(event) => handleClick(event, row.id)}
+                      onClick={(event) => handleClick(row)}
                       role="checkbox"
                       aria-checked={isItemSelected}
                       tabIndex={-1}
@@ -316,36 +316,31 @@ export default function EnhancedTable(props: { title: string }) {
                           inputProps={{ 'aria-labelledby': labelId }}
                         />
                       </TableCell>
-                      <TableCell style={{paddingLeft: 0, width: 100}} align="left">
+                      <TableCell style={{ paddingLeft: 0, width: 100 }} align="left">
                         {row.createdAt && moment(row.createdAt).format('DD/MM/YY HH:MM')}
                       </TableCell>
-                      <TableCell component="th" id={labelId} scope="row" padding="none">
-                        {`${row.match && row.match.teamA} 0 x 0 ${row.match && row.match.teamB}`}
-                      </TableCell>
-                      {/* <TableCell align="right">
-                        {row.match && row.match.yellowCardA + row.match.yellowCardB}
-                      </TableCell>
-                      <TableCell align="right">
-                        {row.match && row.match.redCardA + row.match.redCardB}
-                      </TableCell>
-                      <TableCell align="right">
-                        {row.match && row.match.cornerKickA + row.match.cornerKickB}
-                      </TableCell>
-                      <TableCell align="right">
-                        {row.match && row.match.dangerousAttackA + row.match.dangerousAttackB}
-                      </TableCell>
-                      <TableCell align="right">
-                        {row.match &&
-                          row.match.onTargetA +
-                            row.match.onTargetB +
-                            row.match.offTargetA +
-                            row.match.offTargetA}
-                      </TableCell> */}
+                      <TableCell component="th" id={labelId} padding="none">
+                        <div style={{ display: 'flex', flexDirection:'column' }}>
+                          <span>
+                            {`${row.match && row.match.scoreA} ${row.match && row.match.teamA}`}
+                          </span>
 
-                      <TableCell align="right">{row.odds && row.odds}</TableCell>
-                      <TableCell align="right">{row.value && row.value}</TableCell>
+                          <span>
+                            {` ${row.match && row.match.scoreB} ${row.match && row.match.teamB}`}
+                          </span>
+                        </div>
+                      </TableCell>
+                      {}
+
+                      <TableCell style={{ width: 60 }} align="right">
+                        {row.odds && row.odds}
+                      </TableCell>
+                      <TableCell style={{ width: 60 }} align="right">
+                        {row.value && row.value}
+                      </TableCell>
                       <TableCell
                         style={{
+                          width: 60,
                           fontSize: 12,
                           color: row.win === 1 ? 'green' : row.win === 0 ? 'red' : 'black'
                         }}
@@ -374,10 +369,7 @@ export default function EnhancedTable(props: { title: string }) {
           onChangeRowsPerPage={handleChangeRowsPerPage}
         />
       </Paper>
-      {/* <FormControlLabel
-        control={<Switch checked={dense} onChange={handleChangeDense} />}
-        label="Dense padding"
-      /> */}
+      {}
     </div>
   );
 }

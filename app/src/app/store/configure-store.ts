@@ -14,7 +14,7 @@ import { History } from 'history';
 import { IApplicationState, rootReducer } from './';
 import { logger } from '../middleware/logger';
 import { loginMiddleware } from './sessions/middleware';
-
+import { betMiddleware } from './bets/middleware';
 
 export default function configureStore(
   history: History,
@@ -25,12 +25,16 @@ export default function configureStore(
   // create the redux-saga middleware
   const sagaMiddleware = createSagaMiddleware();
 
-const middlewares: Middleware[] = [logger];
+  const middlewares: Middleware[] = [loginMiddleware, betMiddleware];
 
   // applyMiddleware(...(middlewares as Middleware[]));
   // We'll create our store with the combined reducers/sagas, and the initial Redux state that
   // we'll be passing from our entry point.
-  const store = createStore(rootReducer, initialState, composeEnhancers(applyMiddleware(routerMiddleware(history), loginMiddleware)));
+  const store = createStore(
+    rootReducer,
+    initialState,
+    composeEnhancers(applyMiddleware(routerMiddleware(history), ...middlewares))
+  );
 
   return store;
 }
