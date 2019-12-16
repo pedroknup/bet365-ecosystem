@@ -13,6 +13,9 @@ import { authThunk } from 'app/middleware/auth.thunk';
 import { HomeContainerProps } from '../containers';
 import EnhancedTable from './bets-table';
 
+import { BetInfo } from 'app/components/shared/headbar';
+import { bet } from '../../../../../../../main/src/entities/bet';
+
 export interface IHomeComponentProps extends HomeContainerProps {}
 
 const useStyles = makeStyles({
@@ -55,21 +58,39 @@ export const HomeComponent = (
 ) => {
   const [currentLoginState, setCurrentLoginState] = React.useState(loginState.signin);
   const { isLoading, password, email, token, errorMsg, history } = props;
+  const [selectedBet, setSelectedBet] = React.useState<bet | undefined>(undefined);
   const classes = useStyles();
   if (!token) {
     history.push('/login');
     return <div>Redirect</div>;
   }
-  
+
   return (
     <div className="home-container">
-
-      <span style={{ maxWidth: 200, whiteSpace:'normal', overflow: 'scroll', display: 'block' }}>HOME Token: {token}</span>
+      {selectedBet && (
+        <Card>
+          <CardContent>
+            <BetInfo bet={selectedBet} />
+          </CardContent>
+        </Card>
+      )}
+      <span style={{ maxWidth: 200, whiteSpace: 'normal', overflow: 'scroll', display: 'block' }}>
+        HOME Token: {token}
+      </span>
       {props.bets && props.bets.length}
-      <EnhancedTable rows={props.bets ? props.bets : []} title={'Bets'} />
-      <button onClick={()=>{
-        props.fetchBets(token);
-      }}>Fetch</button>
+      <EnhancedTable
+        onSelectedBet={(bet) => setSelectedBet(bet)}
+        rows={props.bets ? props.bets : []}
+        title={'Bets'}
+      />
+
+      <button
+        onClick={() => {
+          props.fetchBets(token);
+        }}
+      >
+        Fetch
+      </button>
     </div>
   );
 };

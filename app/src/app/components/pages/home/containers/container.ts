@@ -10,7 +10,7 @@ import { IHomeComponentProps, HomeComponent } from '../components';
 import { RouteComponentProps } from 'react-router';
 import { IApplicationState } from 'app/store';
 import { Dispatch, Action, AnyAction } from 'redux';
-import { bet } from '../../../../../../../api/src/entities/bet';
+import { bet } from '../../../../../../../main/src/entities/bet';
 
 interface IStateProps {
   isLoading: boolean;

@@ -31,9 +31,9 @@ import Tooltip from '@material-ui/core/Tooltip';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Switch from '@material-ui/core/Switch';
 import moment from 'moment';
-import { bet } from '../../../../../../../api/src/entities/bet';
+import { bet } from '../../../../../../../main/src/entities/bet';
 
-function createData(
+const createData = (
   id: number,
   teamA: string,
   teamB: string,
@@ -41,8 +41,9 @@ function createData(
   odds: number,
   win: number,
   value: number
-): bet {
+): bet => {
   return {
+    return: 0,
     match: {
       teamA,
       teamB,
@@ -74,13 +75,15 @@ function createData(
       winner: null
     },
     value,
-    id,
+    id: id,
     createdAt: new Date(),
     user: null,
     odds,
     win
   };
-}
+
+
+};
 
 const rowsOld = [
   createData(0, 'Cruzeiro', 'Palmeiras', 2.5, 1.02, 1, 5),
@@ -213,7 +216,11 @@ const EnhancedTableToolbar = (props: { numSelected: number; title: string }) => 
   );
 };
 
-export default function EnhancedTable(props: { rows: bet[]; title: string }) {
+export default function EnhancedTable(props: {
+  rows: bet[];
+  title: string;
+  onSelectedBet: (bet: bet) => void;
+}) {
   const [order, setOrder] = React.useState<'asc' | 'desc'>('asc');
   const rows = props.rows;
   const [orderBy, setOrderBy] = React.useState('');
@@ -239,6 +246,7 @@ export default function EnhancedTable(props: { rows: bet[]; title: string }) {
 
   const handleClick = (row: bet) => {
     console.log(row);
+    props.onSelectedBet(row);
     // const selectedIndex = selected.indexOf(name);
     // let newSelected: any[] = [];
 
@@ -320,7 +328,7 @@ export default function EnhancedTable(props: { rows: bet[]; title: string }) {
                         {row.createdAt && moment(row.createdAt).format('DD/MM/YY HH:MM')}
                       </TableCell>
                       <TableCell component="th" id={labelId} padding="none">
-                        <div style={{ display: 'flex', flexDirection:'column' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
                           <span>
                             {`${row.match && row.match.scoreA} ${row.match && row.match.teamA}`}
                           </span>

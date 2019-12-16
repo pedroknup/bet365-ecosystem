@@ -6,7 +6,6 @@ import { LoginComponent } from '../components/pages/login';
 import { LoginContainer } from '../components/pages/login/containers/login.container';
 import { SidebarComponent } from 'app/components/shared/sidebar';
 import { HomeContainer } from '../components/pages/home/containers/container';
-import { HeadBarComponent } from '../components/shared/headbar/component';
 
 export const PrivateRoutes = hot(module)(() => (
   <div
