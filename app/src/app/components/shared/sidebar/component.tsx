@@ -12,9 +12,9 @@ interface ISidebarProps {
 }
 export const SidebarComponent = (props: TextFieldProps & ISidebarProps) => {
   const [collapsed, setCollapsed] = React.useState<boolean>(false);
-  const maxWidth= collapsed ? 80 : 160;
+  const width= collapsed ? 80 : 160;
   return (
-    <div style={{ maxWidth, minWidth: maxWidth}} className="sidebar">
+    <div style={{ width}} className="sidebar">
       <div>
         <button
           onClick={() => {
