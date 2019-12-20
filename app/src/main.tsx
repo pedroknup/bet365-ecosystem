@@ -25,9 +25,9 @@ const store2 = configureStore(history, {
     email: 'phknup@gmail.com',
     password: ''
   },
-  bet: {
+  todo: {
     isLoading: false,
-    bets: []
+    todos: []
   }
 });
 
@@ -37,7 +37,7 @@ const store2 = configureStore(history, {
 const state = store2.getState();
 
 ReactDOM.render(
-  <div>
+  <div style={{ fontFamily: "'Lato', sans-serif" }}>
     <Provider store={store2 as any}>
       <Router history={history}>
         <Switch>

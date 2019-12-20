@@ -11,10 +11,9 @@ import './styles.scss';
 // import  } from '../containers';
 import { authThunk } from 'app/middleware/auth.thunk';
 import { HomeContainerProps } from '../containers';
-import EnhancedTable from './bets-table';
 
-import { BetInfo } from 'app/components/shared/headbar';
-import { bet } from '../../../../../../../main/src/entities/bet';
+import { todo } from '../../../../../../../api/src/entities/todo';
+
 
 export interface IHomeComponentProps extends HomeContainerProps {}
 
@@ -54,11 +53,11 @@ enum loginState {
 }
 export const HomeComponent = (
   // props: IHomeComponentProps & RouteComponentProps & HomeContainerProps
-  props: IHomeComponentProps
+  props: IHomeComponentProps & HomeContainerProps
 ) => {
   const [currentLoginState, setCurrentLoginState] = React.useState(loginState.signin);
   const { isLoading, password, email, token, errorMsg, history } = props;
-  const [selectedBet, setSelectedBet] = React.useState<bet | undefined>(undefined);
+  const [selectedBet, onSelectTodo] = React.useState<todo | undefined>(undefined);
   const classes = useStyles();
   if (!token) {
     history.push('/login');
@@ -70,23 +69,23 @@ export const HomeComponent = (
       {selectedBet && (
         <Card>
           <CardContent>
-            <BetInfo bet={selectedBet} />
+            {/* <BetInfo todo={selectedBet} /> */}
           </CardContent>
         </Card>
       )}
       <span style={{ maxWidth: 200, whiteSpace: 'normal', overflow: 'scroll', display: 'block' }}>
         HOME Token: {token}
       </span>
-      {props.bets && props.bets.length}
-      <EnhancedTable
-        onSelectedBet={(bet) => setSelectedBet(bet)}
-        rows={props.bets ? props.bets : []}
+      {props.todos && props.todos.length}
+      {/* <EnhancedTable
+        onSelectTodo={(todo:any) => onSelectTodo(todo)}
+        rows={props.todos ? props.todos : []}
         title={'Bets'}
-      />
+      /> */}
 
       <button
         onClick={() => {
-          props.fetchBets(token);
+          props.fetchTodos(token);
         }}
       >
         Fetch

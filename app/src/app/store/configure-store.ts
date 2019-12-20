@@ -14,7 +14,7 @@ import { History } from 'history';
 import { IApplicationState, rootReducer } from './';
 import { logger } from '../middleware/logger';
 import { loginMiddleware } from './sessions/middleware';
-import { betMiddleware } from './bets/middleware';
+import { todoMiddleware } from './todos/middleware';
 
 export default function configureStore(
   history: History,
@@ -25,7 +25,7 @@ export default function configureStore(
   // create the redux-saga middleware
   const sagaMiddleware = createSagaMiddleware();
 
-  const middlewares: Middleware[] = [loginMiddleware, betMiddleware];
+  const middlewares: Middleware[] = [loginMiddleware, todoMiddleware];
 
   // applyMiddleware(...(middlewares as Middleware[]));
   // We'll create our store with the combined reducers/sagas, and the initial Redux state that

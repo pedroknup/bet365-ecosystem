@@ -1,8 +1,8 @@
 import { combineReducers, Dispatch, Reducer, Action, AnyAction } from 'redux';
 import { ISessionState } from './sessions/types';
 import { sessionReducer } from './sessions/reducer';
-import { betsReducer } from './bets/reducer';
-import { IBetState } from './bets/types';
+import { todoReducer } from './todos/reducer';
+import { ITodoState } from './todos/types';
 
 // The top-level state object.
 //
@@ -10,7 +10,7 @@ import { IBetState } from './bets/types';
 // so we can ignore them here.
 export interface IApplicationState {
   session: ISessionState;
-  bet: IBetState;
+  todo: ITodoState;
 }
 
 // Whenever an action is dispatched, Redux will update each top-level application state property
@@ -19,5 +19,5 @@ export interface IApplicationState {
 
 export const rootReducer = combineReducers<IApplicationState>({
   session: sessionReducer,
-  bet: betsReducer
+  todo: todoReducer
 });

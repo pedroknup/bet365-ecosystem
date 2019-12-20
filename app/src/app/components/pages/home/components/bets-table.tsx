@@ -31,71 +31,9 @@ import Tooltip from '@material-ui/core/Tooltip';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Switch from '@material-ui/core/Switch';
 import moment from 'moment';
-import { bet } from '../../../../../../../main/src/entities/bet';
-
-const createData = (
-  id: number,
-  teamA: string,
-  teamB: string,
-  lessThan: number,
-  odds: number,
-  win: number,
-  value: number
-): bet => {
-  return {
-    return: 0,
-    match: {
-      teamA,
-      teamB,
-      id,
-      url: 'www.google.com',
-      createdAt: new Date(),
-      date: new Date(),
-      scoreA: 0,
-      scoreB: 0,
-      redCardA: 0,
-      redCardB: 1,
-      yellowCardA: 3,
-      yellowCardB: 4,
-      possessionA: 42,
-      possessionB: 57,
-      cornerKickA: 17,
-      cornerKickB: 2,
-      attacksA: 32,
-      attacksB: 15,
-      onTargetA: 12,
-      onTargetB: 51,
-      dangerousAttackA: 25,
-      dangerousAttackB: 5,
-      offTargetA: 12,
-      offTargetB: 56,
-      lessThan,
-      odds,
-      bets: [],
-      winner: null
-    },
-    value,
-    id: id,
-    createdAt: new Date(),
-    user: null,
-    odds,
-    win
-  };
+import { todo } from '../../../../../../../api/src/entities/todo';
 
 
-};
-
-const rowsOld = [
-  createData(0, 'Cruzeiro', 'Palmeiras', 2.5, 1.02, 1, 5),
-  createData(1, 'Atlético-MG', 'Corinthians', 2.5, 1.02, 1, 5),
-  createData(2, 'São Paulo', 'Flamengo', 2.5, 1.03, 1, 5),
-  createData(3, 'Palmeiras', 'Vasco', 2.5, 1.02, 1, 5),
-  createData(4, 'América', 'Bahia', 2.5, 1.03, 0, 5),
-  createData(5, 'Grêmio', 'Botafogo', 2.5, 1.04, 1, 5),
-  createData(6, 'Cruzeiro', 'Palmeiras', 2.5, 1.02, 1, 5),
-  createData(10, 'Atlético-MG', 'Corinthians', 2.5, 1.02, -1, 5),
-  createData(20, 'São Paulo', 'Flamengo', 2.5, 1.03, -1, 5)
-];
 
 function desc(a: any, b: any, orderBy: any) {
   if (b[orderBy] < a[orderBy]) {
@@ -217,9 +155,9 @@ const EnhancedTableToolbar = (props: { numSelected: number; title: string }) => 
 };
 
 export default function EnhancedTable(props: {
-  rows: bet[];
+  rows: todo[];
   title: string;
-  onSelectedBet: (bet: bet) => void;
+  onSelectTodo: (bet: todo) => void;
 }) {
   const [order, setOrder] = React.useState<'asc' | 'desc'>('asc');
   const rows = props.rows;
@@ -237,16 +175,16 @@ export default function EnhancedTable(props: {
 
   const handleSelectAllClick = (event: any) => {
     if (event.target.checked) {
-      const newSelecteds = rows.map((n) => n.match);
+      const newSelecteds = rows.map((n) => n.createdAt);
       setSelected(newSelecteds);
       return;
     }
     setSelected([]);
   };
 
-  const handleClick = (row: bet) => {
+  const handleClick = (row: todo) => {
     console.log(row);
-    props.onSelectedBet(row);
+    props.onSelectTodo(row);
     // const selectedIndex = selected.indexOf(name);
     // let newSelected: any[] = [];
 
@@ -288,7 +226,7 @@ export default function EnhancedTable(props: {
       <Paper>
         <EnhancedTableToolbar title={props.title} numSelected={selected.length} />
         <div>
-          <Table
+          {/* <Table
             aria-labelledby="tableTitle"
             size={dense ? 'small' : 'medium'}
             aria-label="enhanced table"
@@ -304,7 +242,7 @@ export default function EnhancedTable(props: {
             <TableBody>
               {stableSort(rows, getSorting(order, orderBy))
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((row: bet, index: any) => {
+                .map((row: todo, index: any) => {
                   const isItemSelected = isSelected(row.id);
                   const labelId = `enhanced-table-checkbox-${index}`;
                   const style = {};
@@ -365,9 +303,9 @@ export default function EnhancedTable(props: {
                 </TableRow>
               )}
             </TableBody>
-          </Table>
+          </Table> */}
         </div>
-        <TablePagination
+        {/* <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
           count={rows.length}
@@ -375,7 +313,7 @@ export default function EnhancedTable(props: {
           page={page}
           onChangePage={handleChangePage}
           onChangeRowsPerPage={handleChangeRowsPerPage}
-        />
+        /> */}
       </Paper>
       {}
     </div>

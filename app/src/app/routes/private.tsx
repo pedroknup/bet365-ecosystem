@@ -6,21 +6,22 @@ import { LoginComponent } from '../components/pages/login';
 import { LoginContainer } from '../components/pages/login/containers/login.container';
 import { SidebarComponent } from 'app/components/shared/sidebar';
 import { HomeContainer } from '../components/pages/home/containers/container';
+import { SidebarContainer } from 'app/components/sidebar';
 
 export const PrivateRoutes = hot(module)(() => (
   <div
     style={{
-      backgroundColor: '#cacaca',
+      backgroundColor: '#f0f0f0',
       display: 'flex',
       flexDirection: 'row',
       marginLeft: -8,
-      overflow: 'scroll', 
+      overflow: 'scroll',
       marginTop: -8
     }}
   >
-    <SidebarComponent />
+    <SidebarContainer />
     <div style={{ flex: 1 }}>
-      <div style={{ padding: 16,flex: 1 }}>
+      <div style={{ padding: 16, flex: 1 }}>
         <Switch>
           <Route exact path="/" component={HomeContainer} />
           <Redirect exact from="/login" to="/" />

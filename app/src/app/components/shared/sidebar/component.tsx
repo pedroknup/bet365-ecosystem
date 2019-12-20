@@ -7,14 +7,20 @@ import { faDashcube } from '@fortawesome/free-brands-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTable } from '@fortawesome/free-solid-svg-icons';
 
+export interface INavButton {
+  isActive?: boolean;
+  text: string;
+  icon?: any;
+}
+
 interface ISidebarProps {
-  errorMessage?: string;
+  navButtons: INavButton[];
 }
 export const SidebarComponent = (props: TextFieldProps & ISidebarProps) => {
   const [collapsed, setCollapsed] = React.useState<boolean>(false);
-  const width= collapsed ? 80 : 160;
+  const width = collapsed ? 80 : 160;
   return (
-    <div style={{ width}} className="sidebar">
+    <div style={{ width }} className="sidebar">
       <div>
         <button
           onClick={() => {
@@ -23,7 +29,10 @@ export const SidebarComponent = (props: TextFieldProps & ISidebarProps) => {
         >
           {collapsed.toString()}
         </button>
-        <FontAwesomeIcon size="lg" icon={faTable} />
+        {/* <FontAwesomeIcon size="lg" icon={faTable} /> */}
+        {props.navButtons.map((item, key) => (
+          <span key={key}>{item.text}</span>
+        ))}
       </div>
     </div>
   );

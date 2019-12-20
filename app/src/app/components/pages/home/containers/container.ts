@@ -3,14 +3,15 @@ import { connect, MapStateToProps, MapDispatchToProps } from 'react-redux';
 // import { IAppState } from '@app/stores';
 
 import * as sessionActions from '../../../../store/sessions/actions';
-import * as betActions from '../../../../store/bets/actions';
+import * as betActions from '../../../../store/todos/actions';
 import { ILoginPayload } from '../../../../store/sessions/types';
 
 import { IHomeComponentProps, HomeComponent } from '../components';
 import { RouteComponentProps } from 'react-router';
 import { IApplicationState } from 'app/store';
 import { Dispatch, Action, AnyAction } from 'redux';
-import { bet } from '../../../../../../../main/src/entities/bet';
+import { todo } from '../../../../../../../api/src/entities/todo';
+
 
 interface IStateProps {
   isLoading: boolean;
@@ -18,18 +19,18 @@ interface IStateProps {
   password?: string;
   errorMsg?: string;
   token?: string;
-  bets?: bet[]
+  todos?: todo[]
 }
 interface IDispatchProps {
   login: (payload: ILoginPayload) => void;
-  fetchBets: (token: string) => void;
+  fetchTodos: (token: string) => void;
 }
 
 const mapStateToProps: MapStateToProps<IStateProps, IHomeComponentProps, IApplicationState> = ({
-  session, bet
+  session, todo
 }) => ({
-  bets: bet.bets,
-  isLoadingBets: bet.isLoading,
+  bets: todo.todos,
+  isLoadingBets: todo.isLoading,
   isLoading: session.isLoading,
   errorMsg: session.errorMsg,
   email: session.email,
@@ -48,8 +49,8 @@ const mapDispatchToProps: MapDispatchToProps<IDispatchProps, IHomeComponentProps
   login: (payload) => {
     console.log(payload)
     return dispatch(sessionActions.loginAction(payload))},
-  fetchBets: (token) => {
-      return dispatch(betActions.fetchBetAction(token));}
+  fetchTodos: (token) => {
+      return dispatch(betActions.fetchTodoAction(token))}
 });
 
 // export interface HomeContainerPropsProps=  IDispatchProps & IStateProps;
