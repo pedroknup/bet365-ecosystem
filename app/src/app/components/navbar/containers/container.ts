@@ -8,10 +8,10 @@ import { ILoginPayload } from '../../../store/sessions/types';
 
 import { IApplicationState } from 'app/store';
 import { Dispatch, Action, AnyAction } from 'redux';
-import { ISidebarComponentProps } from '..';
-import { SidebarComponent, INavButton } from '../components/side-bar';
 import { withRouter } from 'react-router-dom';
 import { user } from '../../../../../../api/src/entities/user';
+import { INavbarComponentProps } from '../components';
+import { NavbarComponent } from '../components';
 
 interface IStateProps {
   isLoading?: boolean;
@@ -19,7 +19,7 @@ interface IStateProps {
 }
 interface IDispatchProps {}
 
-const mapStateToProps: MapStateToProps<IStateProps, ISidebarComponentProps, IApplicationState> = ({
+const mapStateToProps: MapStateToProps<IStateProps, INavbarComponentProps, IApplicationState> = ({
   session,
   todo
 }) => ({ isLoading: todo.isLoading, loggedUser: session.user });
@@ -29,7 +29,7 @@ const mapStateToProps: MapStateToProps<IStateProps, ISidebarComponentProps, IApp
 //   data: heroes.data
 // });
 
-const mapDispatchToProps: MapDispatchToProps<IDispatchProps, ISidebarComponentProps> = (
+const mapDispatchToProps: MapDispatchToProps<IDispatchProps, INavbarComponentProps> = (
   dispatch
 ) => ({
   // login: (payload) => {
@@ -41,14 +41,14 @@ const mapDispatchToProps: MapDispatchToProps<IDispatchProps, ISidebarComponentPr
   // }
 });
 
-// export interface SidebarContainerPropsProps=  IDispatchProps & IStateProps;
+// export interface NavbarContainerPropsProps=  IDispatchProps & IStateProps;
 
-export type SidebarContainerProps = IStateProps & IDispatchProps;
+export type NavbarContainerProps = IStateProps & IDispatchProps;
 // const mapDispatchToProps = (dispatch: Dispatch<IDispatchProps>) => ({
 //   login: (payload: ILoginPayload) => dispatch(sessionActions.loginAction(payload))
 // });
 
-export const SidebarContainer = connect(
+export const NavbarContainer = connect(
   mapStateToProps,
   mapDispatchToProps
-)(withRouter(SidebarComponent));
+)(withRouter(NavbarComponent));

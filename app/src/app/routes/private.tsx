@@ -7,6 +7,7 @@ import { LoginContainer } from '../components/pages/login/containers/login.conta
 import { SidebarComponent } from 'app/components/shared/sidebar';
 import { HomeContainer } from '../components/pages/home/containers/container';
 import { SidebarContainer } from 'app/components/sidebar';
+import { NavbarContainer } from 'app/components/navbar';
 
 export const PrivateRoutes = hot(module)(() => (
   <div
@@ -21,6 +22,7 @@ export const PrivateRoutes = hot(module)(() => (
   >
     <SidebarContainer />
     <div style={{ flex: 1 }}>
+      <NavbarContainer />
       <div style={{ padding: 16, flex: 1 }}>
         <Switch>
           <Route exact path="/" component={HomeContainer} />
