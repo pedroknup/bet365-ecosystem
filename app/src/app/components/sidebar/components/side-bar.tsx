@@ -13,8 +13,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { SidebarContainerProps } from '../containers';
 import { RouteComponentProps } from 'react-router';
+import ReactDOM from 'react-dom';
 const Logo = require('../../../../assets/logo.png');
-
 export interface ISidebarComponentProps {}
 export const SidebarComponent = (
   props: ISidebarComponentProps & RouteComponentProps & SidebarContainerProps
@@ -35,44 +35,45 @@ export const SidebarComponent = (
   );
 
   return (
-    <div // onMouseEnter={() => {
-      //   if (!props.isExpanded) setInternalExpanded(true);
-      // }}
+    <div // }} //   if (!props.isExpanded) setInternalExpanded(true); // onMouseEnter={() => {
       // onMouseLeave={() => {
       //   if (!props.isExpanded) setInternalExpanded(false);
       // }}
       className={sidebarContainerClasses}
     >
       <div className={sidebarClasses}>
-        <span className="sidebar-item logo">
-          <img src={Logo} />
-          {<span>PK Boilerplate</span>}
+        <div>
+          <span className="sidebar-item logo">
+            <img src={Logo} />
+            {<span className="sidebar-item-title">PK Boilerplate</span>}
 
-          <FontAwesomeIcon
-            onClick={() => {
-              props.toggleSidebarOpened && props.toggleSidebarOpened();
-            }}
-            className="close-sidebar"
-            size="sm"
-            icon={faTimes}
-          />
-        </span>
-        <span className="sidebar-item active">
-          <FontAwesomeIcon size="sm" icon={faHome} />
-          {<span>Home</span>}
-        </span>
-        <span className="sidebar-item">
-          <FontAwesomeIcon size="sm" icon={faTools} />
-          {<span>Settings</span>}
-        </span>
-        <span className="sidebar-item">
-          <FontAwesomeIcon size="sm" icon={faQuestionCircle} />
-          {<span>About</span>}
-        </span>
-        <span className="sidebar-item">
-          <FontAwesomeIcon size="sm" icon={faSignOutAlt} />
-          {<span>Sign out</span>}
-        </span>
+            <FontAwesomeIcon
+              onClick={() => {
+                props.toggleSidebarOpened && props.toggleSidebarOpened();
+              }}
+              className="close-sidebar"
+              size="sm"
+              icon={faTimes}
+            />
+          </span>
+          <span className="sidebar-item active">
+            <FontAwesomeIcon size="sm" icon={faHome} />
+            {<span className="sidebar-item-title">Home</span>}
+          </span>
+          <span className="sidebar-item">
+            <FontAwesomeIcon size="sm" icon={faTools} />
+            {<span className="sidebar-item-title">Settings</span>}
+          </span>
+          <span className="sidebar-item">
+            <FontAwesomeIcon size="sm" icon={faQuestionCircle} />
+            {<span className="sidebar-item-title">About</span>}
+          </span>
+          <span className="sidebar-item">
+            <FontAwesomeIcon size="sm" icon={faSignOutAlt} />
+            {<span className="sidebar-item-title">Sign out</span>}
+          </span>
+        </div>
+        <span className="sidebar-item-title footer">Developed with ❤ by Pedro Knup</span>
       </div>
     </div>
   );

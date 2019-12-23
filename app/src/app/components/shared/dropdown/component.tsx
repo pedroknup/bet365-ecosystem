@@ -1,5 +1,7 @@
 import * as React from 'react';
 import './styles.scss';
+import onClickOutside from 'react-onclickoutside';
+
 
 interface IDropdownItem {
   content?: JSX.Element | string;
@@ -11,19 +13,23 @@ interface IDropdownProps {
   children: any;
   items: IDropdownItem[];
 }
-export const DropdownComponent = (props: IDropdownProps) => {
-  const [isOpen, setIsOpen] = React.useState(false);
+
+interface IInternalDropdownProps {
+  isOpen: boolean;
+  onClick: () => void;
+}
+const DropdownRawComponent = (props: IDropdownProps & IInternalDropdownProps) => {
   return (
     <div className="dropdown">
       <div
         className="dropdown-content"
         onClick={() => {
-          setIsOpen(!isOpen);
+          props.onClick();
         }}
       >
         {props.children}
       </div>
-      <div className={`dropdown-tooltip ${isOpen ? 'open' : ''}`}>
+      <div className={`dropdown-tooltip ${props.isOpen ? 'open' : ''}`}>
         {props.items.map((item, key) => (
           <span
             onClick={() => {
@@ -39,3 +45,21 @@ export const DropdownComponent = (props: IDropdownProps) => {
     </div>
   );
 };
+
+const DropdownOutsideClick = onClickOutside(DropdownRawComponent);
+
+const DropdownComponent = (props: IDropdownProps) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  return (
+    <DropdownOutsideClick
+      onClick={() => setIsOpen(!isOpen)}
+      isOpen={isOpen}
+      handleClickOutside={() => {
+        setIsOpen(false);
+      }}
+      {...props}
+    />
+  );
+};
+export { DropdownComponent };
