@@ -2,7 +2,9 @@ import { combineReducers, Dispatch, Reducer, Action, AnyAction } from 'redux';
 import { ISessionState } from './sessions/types';
 import { sessionReducer } from './sessions/reducer';
 import { todoReducer } from './todos/reducer';
+import { navigationReducer } from './navigation/reducer';
 import { ITodoState } from './todos/types';
+import { INavigationState } from './navigation/types';
 
 // The top-level state object.
 //
@@ -10,6 +12,7 @@ import { ITodoState } from './todos/types';
 // so we can ignore them here.
 export interface IApplicationState {
   session: ISessionState;
+  navigation: INavigationState;
   todo: ITodoState;
 }
 
@@ -19,5 +22,6 @@ export interface IApplicationState {
 
 export const rootReducer = combineReducers<IApplicationState>({
   session: sessionReducer,
+  navigation: navigationReducer,
   todo: todoReducer
 });

@@ -8,6 +8,8 @@ import { SidebarComponent } from 'app/components/shared/sidebar';
 import { HomeContainer } from '../components/pages/home/containers/container';
 import { SidebarContainer } from 'app/components/sidebar';
 import { NavbarContainer } from 'app/components/navbar';
+// import { NavbarContainer } from '../components/navbar/containers/container';
+
 
 export const PrivateRoutes = hot(module)(() => (
   <div

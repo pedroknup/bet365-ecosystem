@@ -1,54 +1,52 @@
 import { connect, MapStateToProps, MapDispatchToProps } from 'react-redux';
-
 // import { IAppState } from '@app/stores';
 
 import * as sessionActions from '../../../store/sessions/actions';
 import * as betActions from '../../../store/todos/actions';
+import * as navActions from '../../../store/navigation/actions';
 import { ILoginPayload } from '../../../store/sessions/types';
 
 import { IApplicationState } from 'app/store';
 import { Dispatch, Action, AnyAction } from 'redux';
 import { ISidebarComponentProps } from '..';
-import { SidebarComponent, INavButton } from '../components/side-bar';
+import { SidebarComponent } from '../components/side-bar';
 import { withRouter } from 'react-router-dom';
 import { user } from '../../../../../../api/src/entities/user';
 
 interface IStateProps {
-  isLoading?: boolean;
-  loggedUser?: user;
+  isExpanded?: boolean;
+  isOpened?: boolean;
 }
-interface IDispatchProps {}
+interface IDispatchProps {
+  toggleSidebarExpanded?: () => void;
+  toggleSidebarOpened?: () => void;
+}
 
-const mapStateToProps: MapStateToProps<IStateProps, ISidebarComponentProps, IApplicationState> = ({
-  session,
-  todo
-}) => ({ isLoading: todo.isLoading, loggedUser: session.user });
-// const mapStateToProps = ({ session }: IApplicationState) => ({
-//   loading: heroes.loading,
-//   errors: heroes.errors,
-//   data: heroes.data
-// });
+const mapStateToProps: MapStateToProps<IStateProps, ISidebarComponentProps, IApplicationState> = (
+  state
+) => {
+  const { isExpanded, isOpened } = state.navigation;
+
+  return {
+    isExpanded: isExpanded ? isExpanded : false,
+    isOpened: isOpened ? isOpened :  false
+  };
+};
 
 const mapDispatchToProps: MapDispatchToProps<IDispatchProps, ISidebarComponentProps> = (
   dispatch
-) => ({
-  // login: (payload) => {
-  //   console.log(payload);
-  //   return dispatch(sessionActions.loginAction(payload));
-  // },
-  // fetchBets: (token) => {
-  //   return dispatch(betActions.fetchBetAction(token));
-  // }
-});
+) => {
+  return {
+    toggleSidebarExpanded: () => dispatch(navActions.toggleExpanded),
+    toggleSidebarOpened: () => dispatch(navActions.toggleOpened)
+  };
+};
 
-// export interface SidebarContainerPropsProps=  IDispatchProps & IStateProps;
-
+// export type SidebarContainerProps = IStateProps & IDispatchProps;
 export type SidebarContainerProps = IStateProps & IDispatchProps;
-// const mapDispatchToProps = (dispatch: Dispatch<IDispatchProps>) => ({
-//   login: (payload: ILoginPayload) => dispatch(sessionActions.loginAction(payload))
-// });
 
-export const SidebarContainer = connect(
+export const SidebarContainer = connect<IStateProps>(
   mapStateToProps,
   mapDispatchToProps
 )(withRouter(SidebarComponent));
+// )(SidebarComponent);

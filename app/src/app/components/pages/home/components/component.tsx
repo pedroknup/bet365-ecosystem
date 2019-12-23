@@ -14,7 +14,6 @@ import { HomeContainerProps } from '../containers';
 
 import { todo } from '../../../../../../../api/src/entities/todo';
 
-
 export interface IHomeComponentProps extends HomeContainerProps {}
 
 const useStyles = makeStyles({
@@ -53,10 +52,10 @@ enum loginState {
 }
 export const HomeComponent = (
   // props: IHomeComponentProps & RouteComponentProps & HomeContainerProps
-  props: IHomeComponentProps & HomeContainerProps
+  props: IHomeComponentProps
 ) => {
   const [currentLoginState, setCurrentLoginState] = React.useState(loginState.signin);
-  const { isLoading, password, email, token, errorMsg, history } = props;
+  const { token, history } = props;
   const [selectedBet, onSelectTodo] = React.useState<todo | undefined>(undefined);
   const classes = useStyles();
   if (!token) {
@@ -68,9 +67,7 @@ export const HomeComponent = (
     <div className="home-container">
       {selectedBet && (
         <Card>
-          <CardContent>
-            {/* <BetInfo todo={selectedBet} /> */}
-          </CardContent>
+          <CardContent>{/* <BetInfo todo={selectedBet} /> */}</CardContent>
         </Card>
       )}
       <span style={{ maxWidth: 200, whiteSpace: 'normal', overflow: 'scroll', display: 'block' }}>
@@ -82,7 +79,7 @@ export const HomeComponent = (
         rows={props.todos ? props.todos : []}
         title={'Bets'}
       /> */}
-
+      {props.isExpanded ? 'Expanded' : 'Not expanded'}
       <button
         onClick={() => {
           props.fetchTodos(token);

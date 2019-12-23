@@ -12,14 +12,11 @@ import { IApplicationState } from 'app/store';
 import { Dispatch, Action, AnyAction } from 'redux';
 import { todo } from '../../../../../../../api/src/entities/todo';
 
-
 interface IStateProps {
-  isLoading: boolean;
-  email?: string;
-  password?: string;
-  errorMsg?: string;
-  token?: string;
-  todos?: todo[]
+  isLoadingBets: boolean;
+  token: string;
+  isExpanded?: boolean;
+  todos?: todo[];
 }
 interface IDispatchProps {
   login: (payload: ILoginPayload) => void;
@@ -27,15 +24,14 @@ interface IDispatchProps {
 }
 
 const mapStateToProps: MapStateToProps<IStateProps, IHomeComponentProps, IApplicationState> = ({
-  session, todo
+  session,
+  navigation,
+  todo
 }) => ({
-  bets: todo.todos,
+  todos: todo.todos,
   isLoadingBets: todo.isLoading,
-  isLoading: session.isLoading,
-  errorMsg: session.errorMsg,
-  email: session.email,
-  password: session.password,
-  token: session.token
+  token: session.token,
+  isExpanded: navigation.isExpanded
 });
 // const mapStateToProps = ({ session }: IApplicationState) => ({
 //   loading: heroes.loading,
@@ -43,14 +39,14 @@ const mapStateToProps: MapStateToProps<IStateProps, IHomeComponentProps, IApplic
 //   data: heroes.data
 // });
 
-const mapDispatchToProps: MapDispatchToProps<IDispatchProps, IHomeComponentProps> = (
-  dispatch
-) => ({
+const mapDispatchToProps: MapDispatchToProps<IDispatchProps, IHomeComponentProps> = (dispatch) => ({
   login: (payload) => {
-    console.log(payload)
-    return dispatch(sessionActions.loginAction(payload))},
+    console.log(payload);
+    return dispatch(sessionActions.loginAction(payload));
+  },
   fetchTodos: (token) => {
-      return dispatch(betActions.fetchTodoAction(token))}
+    return dispatch(betActions.fetchTodoAction(token));
+  }
 });
 
 // export interface HomeContainerPropsProps=  IDispatchProps & IStateProps;

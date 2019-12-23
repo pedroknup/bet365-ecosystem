@@ -14,6 +14,9 @@ import { LoginContainer } from './app/components/pages/login/containers/login.co
 // prepare store
 export const history = createBrowserHistory();
 const store2 = configureStore(history, {
+  navigation: {
+    isExpanded: true
+  },
   session: {
     token: '',
     isLoading: false,
@@ -37,7 +40,7 @@ const store2 = configureStore(history, {
 const state = store2.getState();
 
 ReactDOM.render(
-  <div style={{ fontFamily: "'Lato', sans-serif" }}>
+  <div style={{ marginRight: -8, fontFamily: "'Lato', sans-serif" }}>
     <Provider store={store2 as any}>
       <Router history={history}>
         <Switch>
