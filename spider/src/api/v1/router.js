@@ -690,21 +690,21 @@ const getMatches = async page =>
         if (shouldReturn) {
           if (
             item.teamA.toLowerCase().includes("sub") ||
-            item.teamA.toLowerCase().includes("U18") ||
-            item.teamA.toLowerCase().includes("U19") ||
-            item.teamA.toLowerCase().includes("U20") ||
-            item.teamA.toLowerCase().includes("U21") ||
-            item.teamA.toLowerCase().includes("U22") ||
-            item.teamA.toLowerCase().includes("U23") ||
-            item.teamA.toLowerCase().includes("women") ||
+            item.teamA.toLowerCase().includes("u18") ||
+            item.teamA.toLowerCase().includes("u19") ||
+            item.teamA.toLowerCase().includes("u20") ||
+            item.teamA.toLowerCase().includes("u21") ||
+            item.teamA.toLowerCase().includes("u22") ||
+            item.teamA.toLowerCase().includes("u23") ||
+            item.teamA.toLowerCase().includes("uomen") ||
             item.teamB.toLowerCase().includes("sub") ||
-            item.teamB.toLowerCase().includes("women") ||
-            item.teamB.toLowerCase().includes("U18") ||
-            item.teamB.toLowerCase().includes("U19") ||
-            item.teamB.toLowerCase().includes("U20") ||
-            item.teamB.toLowerCase().includes("U21") ||
-            item.teamB.toLowerCase().includes("U22") ||
-            item.teamB.toLowerCase().includes("U23")
+            item.teamB.toLowerCase().includes("uomen") ||
+            item.teamB.toLowerCase().includes("u18") ||
+            item.teamB.toLowerCase().includes("u19") ||
+            item.teamB.toLowerCase().includes("u20") ||
+            item.teamB.toLowerCase().includes("u21") ||
+            item.teamB.toLowerCase().includes("u22") ||
+            item.teamB.toLowerCase().includes("u23")
           )
             shouldReturn = false;
           console.log(
@@ -1277,60 +1277,112 @@ router.use("/match", async (req, res) => {
   res.send({ matches: filteredMatches, nextMinute: data.nextMinute });
 });
 
-router.post("/check", async (req, res) => {
-  const browser = await launchBrowser(false);
-  try {
-    const { matches } = req.body;
+router.post("/getresults", async (req, res) => {
+  // browserManager;
+  const { username, password } = req.body.user;
+  const { ip } = req.body;
 
-    let finishedMatches = [];
-    let unfinishedMatches = [];
+  const reqId = browserManager.getNewReqId();
+  browserManager.activeIps.push({
+    id: reqId,
+    ip
+  });
 
-    const checkMatch = async match => {
-      const page = await browser.newPage();
-      await page.emulate(iPhonex);
+  // let successfullyBets = [];
+  const browserInstance = await browserManager.getInstanceByIp(ip);
+  // const { browser } = browserInstance;
+  const pageInstance = await browserManager.getPageInstanceByBrowserInstance(
+    browserInstance
+  );
+  const page = pageInstance.page;
+  const pId = pageInstance.id;
 
-      await page.exposeFunction("pushFinishedMatch", match =>
-        finishedMatches.push(match)
-      );
-      await page.exposeFunction("pushUninishedMatch", match =>
-        unfinishedMatches.push(match)
-      );
-      await page.goto(match.url);
-      await page.waitForSelector(".hm-HeaderModule");
-
-      await sleep(2000);
-      await page.evaluate(async match => {
-        const finishedLabel = document.querySelector(".ml1-Anims_H2Text");
-        const matchBlock = document.querySelector(".ipo-Fixture_GameDetail");
-        // if (finishedLabel) {
-        //   if (finishedLabel.innerHTML.toLowerCase().includes("eind"));
-        //   await window.pushFinishedMatch(match);
-        // } else {
-        //   if (!!matchBlock) await window.pushFinishedMatch(match);
-        // }
-        if (match.url != window.location.href) {
-          await window.pushFinishedMatch(match);
-        } else {
-          await window.pushUninishedMatch(match);
-        }
-        console.log(window.location.href);
-        console.log(match.url);
-        console.log(finishedLabel);
-        console.log(matchBlock);
-        return true;
-      }, match);
-
-      // await page.close();
-    };
-    const promises = [];
-    matches.forEach(item => {
-      promises.push(checkMatch(item));
-    });
-    await Promise.all(promises);
-  } catch {
-    await browser.close();
+  const loginResponse = await loginWithPage(page, username, password, ip);
+  if (!loginResponse) {
+    //critical
   }
-  res.send({ finishedMatches, unfinishedMatches });
+  await page.waitForSelector(".hm-LoggedInButtons_MyBetsLabel");
+  let myBetsLabel = await page.$(".hm-LoggedInButtons_MyBetsLabel").innerText;
+  for (let i=0; i<5;i++){
+    if (!myBetsLabel){
+      await sleep(500);
+    }else{
+      i = 10;
+    }
+  }
+
+  await sleep(2000);
+  
+  const clickResult = await page.evaluate(() => {
+    try {
+      document.querySelector(".hm-LoggedInButtons_MyBetsLabel").click();
+      console.log("sucesso")
+      return true;
+    } catch {
+      console.log("not found")
+      return false;
+    }
+  });
+  if (!clickResult) {
+    ("error");
+  }
+  try {
+    await sleep(500);
+    await page.waitForSelector(".myb-MyBetsHeader_Container");
+    const bets = await page.evaluate(async () => {
+      function sleep(ms) {
+        return new Promise(resolve => {
+          setTimeout(resolve, ms);
+        });
+      }
+      document.querySelector(".myb-MyBetsHeader_Container").children[3].click();
+      await sleep(500);
+      const betsArray = document.querySelectorAll(".myb-SettledBetItemHeader");
+      const length = betsArray.length;
+      const bets = [];
+      for (let i = 0; i < length; i++) {
+        await sleep(300);
+        betsArray[i].click();
+        const teams = betsArray[i].parentElement
+          .querySelector(".myb-SettledBetParticipant_FixtureDescription")
+          .innerText.split(" v ");
+        await sleep(100);
+        const teamA = teams[0];
+        const teamB = teams[1];
+        const returnValue = betsArray[i].parentElement
+          .querySelector(".myb-SettledBetItemFooter_ReturnText")
+          .innerText.replace("R$", "")
+          .replace(",", ".");
+        const resultLabel = betsArray[i].querySelector(
+          ".myb-SettledBetItem_BetStateLabel"
+        ).innerText;
+        console.log(betsArray[i]);
+        const win =
+          !resultLabel.toLowerCase().includes("perdida") &&
+          !resultLabel.toLowerCase().includes("lost");
+        bets.push({
+          teamA,
+          teamB,
+          returnValue,
+          win
+        });
+      }
+      return bets;
+    });
+
+    browserManager.activeIps = browserManager.activeIps.filter(
+      item => item.id != reqId
+    );
+
+    res.send({ results: bets });
+  } catch (e) {
+    browserManager.activeIps = browserManager.activeIps.filter(
+      item => item.id != reqId
+    );
+
+    console.log(chalk.redBright(`An error has occurred. ${e.message}`));
+    res.send({ results: [] });
+  }
 });
 
 router.use("/open/:ip", async (req, res) => {
@@ -1390,7 +1442,7 @@ router.use("/bet/match", async (req, res) => {
   const { username, password } = req.body.user;
   const { matches, maxOdd, valueToBet, limitBets, ip } = req.body;
   let successfullyBets = [];
-  console.log(req.body)
+  console.log(req.body);
   const reqId = browserManager.getNewReqId();
   browserManager.activeIps.push({
     id: reqId,
@@ -1421,7 +1473,7 @@ router.use("/health", async (req, res) => {
   res.status(200).send();
 });
 
-router.use("/getresults", async (req, res) => {
+router.use("/old", async (req, res) => {
   const browser = await launchBrowser(true);
   try {
     const { username, password, ip, limit } = req.body;

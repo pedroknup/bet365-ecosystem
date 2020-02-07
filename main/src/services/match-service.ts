@@ -15,11 +15,13 @@ import { user_status } from "../entities/user_status";
 import { user } from "../entities/user";
 const LIMIT = 9;
 const MAXIMUM_ODDS = 1.05;
+const MAXIMUM_ODDS_AGGRESSIVE = 1.07;
 const VALUE_TO_BET = 10;
 const SHOULD_LIMIT_TIME = false;
 const MAXIMUM_MORE_THAN = 4;
 const MAXIMUM_MORE_THAN_AGRESSIVE = 4;
 const MAXIMUM_MORE_THAN_CONSERVATIVE = 3;
+const player = require("play-sound");
 
 export interface IMatch {
   id: number;
@@ -264,12 +266,15 @@ export default class Main {
       // console.log("Red card:", redCardA + redCardB);
       const redCards = redCardA + redCardB;
       return (
-        item.odds <= MAXIMUM_ODDS &&
-        item.moreThan < MAXIMUM_MORE_THAN_AGRESSIVE &&
-        redCards === 0
+        (item.odds <= MAXIMUM_ODDS &&
+          item.moreThan < MAXIMUM_MORE_THAN_AGRESSIVE &&
+          redCards <= 1) ||
+        (item.odds <= MAXIMUM_ODDS_AGGRESSIVE &&
+          item.moreThan < MAXIMUM_MORE_THAN_AGRESSIVE + 1 &&
+          redCards == 0)
       );
     });
-    const filteredMatchesConservative = matches.filter(item => {
+    let filteredMatchesConservative = matches.filter(item => {
       const redCardA = parseInt(item.redCardA.toString());
       const redCardB = parseInt(item.redCardB.toString());
       const dangerousAttackA = parseInt(item.dangerousAttackA.toString());
@@ -280,12 +285,30 @@ export default class Main {
       // console.log("Dangerous Attack:", dangerousAttacks);
 
       return (
-        item.odds <= MAXIMUM_ODDS &&
-        item.moreThan < MAXIMUM_MORE_THAN_CONSERVATIVE &&
-        redCards === 0 &&
-        dangerousAttacks <= 180
+        item.odds <= MAXIMUM_ODDS 
+        // &&
+        // item.moreThan < MAXIMUM_MORE_THAN_CONSERVATIVE &&
+        // redCards === 0 &&
+        // dangerousAttacks <= 180
       );
     });
+    // const filteredMatchesConservative = matches.filter(item => {
+    //   const redCardA = parseInt(item.redCardA.toString());
+    //   const redCardB = parseInt(item.redCardB.toString());
+    //   const dangerousAttackA = parseInt(item.dangerousAttackA.toString());
+    //   const dangerousAttackB = parseInt(item.dangerousAttackB.toString());
+    //   const redCards = redCardA + redCardB;
+    //   // console.log("Red card:", redCards);
+    //   const dangerousAttacks = dangerousAttackA + dangerousAttackB;
+    //   // console.log("Dangerous Attack:", dangerousAttacks);
+
+    //   return (
+    //     item.odds <= MAXIMUM_ODDS &&
+    //     item.moreThan < MAXIMUM_MORE_THAN_CONSERVATIVE &&
+    //     redCards === 0 &&
+    //     dangerousAttacks <= 180
+    //   );
+    // });
     console.log(`Total matches > 80 min: ${matches.length}`);
 
     const setDateTime = function(date, str) {
@@ -302,8 +325,9 @@ export default class Main {
 
     let invalidTime = c > start.getTime() && c < end.getTime();
     if (invalidTime) {
-      console.log("Interval for aggressive  estrategy");
+      console.log("Interval for both strategy");
       filteredMatchesAgressive = [];
+      filteredMatchesConservative = [];
     }
     // if (new Date().getTime() >= limitHour.getTime()) {
 
@@ -390,6 +414,11 @@ const makeBetUser = async (
   }
   if (user.betUsername && user.betPassword) {
     if (filteredMatches.length > 0) {
+      try {
+        player.play("./cash.mp3", err => {
+          if (err) console.log(err);
+        });
+      } catch {}
       try {
         createUserLog(
           user,
