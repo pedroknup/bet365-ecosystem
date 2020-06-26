@@ -388,7 +388,7 @@ const getNewPageByIp = async (browser, ip) => {
   await page.emulate(iPhonex);
   const options = {
     username: `lum-customer-hl_999dc5f5-zone-static-ip-${ip}`,
-    password: "juohlhy66kgb"
+    password: "juohlhy66kgb" //old password from a deactivated user account :) 
   };
 
   await page.authenticate(options);
