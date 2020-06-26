@@ -7,9 +7,6 @@ import { LoginContainer } from '../components/pages/login/containers/login.conta
 import { SidebarComponent } from 'app/components/shared/sidebar';
 import { HomeContainer } from '../components/pages/home/containers/container';
 import { SidebarContainer } from 'app/components/sidebar';
-import { NavbarContainer } from 'app/components/navbar';
-// import { NavbarContainer } from '../components/navbar/containers/container';
-
 
 export const PrivateRoutes = hot(module)(() => (
   <div
@@ -22,7 +19,7 @@ export const PrivateRoutes = hot(module)(() => (
       marginTop: -8
     }}
   >
-    <SidebarContainer />
+    <SidebarContainer/>
     <div style={{ flex: 1 }}>
       <NavbarContainer />
       <div style={{ padding: 16, flex: 1 }}>

@@ -52,7 +52,7 @@ enum loginState {
 }
 export const HomeComponent = (
   // props: IHomeComponentProps & RouteComponentProps & HomeContainerProps
-  props: IHomeComponentProps
+  props: IHomeComponentProps & HomeContainerProps
 ) => {
   const [currentLoginState, setCurrentLoginState] = React.useState(loginState.signin);
   const { token, history } = props;
