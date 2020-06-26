@@ -6,6 +6,7 @@ import { LoginComponent } from '../components/pages/login';
 import { LoginContainer } from '../components/pages/login/containers/login.container';
 import { SidebarComponent } from 'app/components/shared/sidebar';
 import { HomeContainer } from '../components/pages/home/containers/container';
+import { SidebarContainer } from 'app/components/sidebar';
 
 export const PrivateRoutes = hot(module)(() => (
   <div
@@ -18,7 +19,7 @@ export const PrivateRoutes = hot(module)(() => (
       marginTop: -8
     }}
   >
-    <SidebarComponent />
+    <SidebarContainer/>
     <div style={{ flex: 1 }}>
       <div style={{ padding: 16,flex: 1 }}>
         <Switch>
